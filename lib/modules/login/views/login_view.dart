@@ -20,7 +20,7 @@ class LoginView extends GetView<LoginController> {
       backgroundColor: theme.scaffoldBackgroundColor,
       body: LayoutBuilder(
         builder: (context, constraints) {
-          final isSmallScreen = constraints.maxWidth < 800;
+          final isSmallScreen = constraints.maxWidth < 900;
 
           if (isSmallScreen) {
             return Center(
@@ -44,59 +44,70 @@ class LoginView extends GetView<LoginController> {
                       ? AppColors.darkSidebar
                       : AppColors.lightSurfaceSecondary,
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 64,
-                    vertical: 48,
+                    horizontal: 48,
+                    vertical: 36,
                   ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // LOGO
-                      SizedBox(
-                        height: 120,
-                        child: SvgPicture.asset(
-                          isDark
-                              ? 'assets/svg/biteflow_logo_dark.svg'
-                              : 'assets/svg/biteflow_logo.svg',
-                          fit: BoxFit.contain,
-                          alignment: Alignment.centerLeft,
+                  child: SingleChildScrollView(
+                    child: ConstrainedBox(
+                      constraints: BoxConstraints(
+                        minHeight: (constraints.maxHeight - 72).clamp(0, double.infinity),
+                      ),
+                      child: IntrinsicHeight(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // LOGO
+                            SizedBox(
+                              height: 64,
+                              child: SvgPicture.asset(
+                                isDark
+                                    ? 'assets/svg/biteflow_logo_dark.svg'
+                                    : 'assets/svg/biteflow_logo.svg',
+                                fit: BoxFit.contain,
+                                alignment: Alignment.centerLeft,
+                              ),
+                            ),
+
+                            const Spacer(),
+                            const SizedBox(height: 24),
+
+                            // TITLE
+                            CustomTextWidget(
+                              'Fast checkout.\nHappy customers.',
+                              style: TextStyle(
+                                fontSize: 44,
+                                height: 1.1,
+                                fontWeight: FontWeight.w800,
+                                color: colors.onSurface,
+                                letterSpacing: -0.5,
+                              ),
+                            ),
+
+                            const SizedBox(height: 16),
+
+                            CustomTextWidget(
+                              'A clean POS designed for busy fast-food counters.',
+                              style: TextStyle(
+                                fontSize: 16,
+                                height: 1.5,
+                                color: colors.onSurfaceVariant,
+                              ),
+                            ),
+
+                            const SizedBox(height: 24),
+                            const Spacer(),
+
+                            CustomTextWidget(
+                              '© BiteFlow POS • All rights reserved',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: colors.onSurfaceVariant.withValues(alpha: 0.6),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-
-                      const Spacer(),
-
-                      // TITLE
-                      CustomTextWidget(
-                        'Fast checkout.\nHappy customers.',
-                        style: TextStyle(
-                          fontSize: 48,
-                          height: 1.1,
-                          fontWeight: FontWeight.w800,
-                          color: colors.onSurface,
-                          letterSpacing: -0.5,
-                        ),
-                      ),
-
-                      const SizedBox(height: 20),
-
-                      CustomTextWidget(
-                        'A clean POS designed for busy fast-food counters.',
-                        style: TextStyle(
-                          fontSize: 18,
-                          height: 1.5,
-                          color: colors.onSurfaceVariant,
-                        ),
-                      ),
-
-                      const Spacer(),
-
-                      CustomTextWidget(
-                        '© BiteFlow POS • All rights reserved',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: colors.onSurfaceVariant.withValues(alpha: 0.6),
-                        ),
-                      ),
-                    ],
+                    ),
                   ),
                 ),
               ),
@@ -110,10 +121,10 @@ class LoginView extends GetView<LoginController> {
                   height: double.infinity,
                   color: theme.scaffoldBackgroundColor,
                   alignment: Alignment.center,
-                  padding: const EdgeInsets.all(32),
+                  padding: const EdgeInsets.all(24),
                   child: SingleChildScrollView(
                     child: ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 460),
+                      constraints: const BoxConstraints(maxWidth: 440),
                       child: _buildLoginCard(context, colors, isDark),
                     ),
                   ),
@@ -136,7 +147,7 @@ class LoginView extends GetView<LoginController> {
         : null;
 
     return Container(
-      padding: const EdgeInsets.fromLTRB(32, 32, 32, 28),
+      padding: const EdgeInsets.fromLTRB(28, 28, 28, 24),
       decoration: BoxDecoration(
         color: colors.surface,
         borderRadius: BorderRadius.circular(20),
@@ -156,15 +167,19 @@ class LoginView extends GetView<LoginController> {
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              CustomTextWidget(
-                'Welcome back',
-                style: TextStyle(
-                  fontSize: 26,
-                  fontWeight: FontWeight.w800,
-                  color: colors.onSurface,
+              Flexible(
+                child: CustomTextWidget(
+                  'Welcome back',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.w800,
+                    color: colors.onSurface,
+                  ),
                 ),
               ),
-              const SizedBox(width: 14),
+              const SizedBox(width: 10),
 
               // ONLINE STATUS
               if (connectivityController != null)
