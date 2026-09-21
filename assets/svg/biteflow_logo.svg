@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 300" role="img" aria-labelledby="title desc">
+  <title id="title">BiteFlow Logo</title>
+  <desc id="desc">BiteFlow burger icon with FAST SIMPLE RELIABLE tagline</desc>
+  <g transform="translate(55 50)">
+    <path d="M25 85C25 38 63 5 110 5s85 33 85 80H25Z" fill="#FFAA3D"/>
+    <path d="M25 85h170c12 0 22 10 22 22v25c0 35-28 63-63 63H66c-35 0-63-28-63-63v-25c0-12 10-22 22-22Z" fill="#FF6B35"/>
+    <path d="M37 122c47 29 99 29 146 0" fill="none" stroke="#12BFA6" stroke-width="16" stroke-linecap="round"/>
+    <rect x="31" y="207" width="158" height="24" rx="12" fill="#12BFA6"/>
+  </g>
+  <text x="310" y="155" font-family="Arial, Helvetica, sans-serif" font-size="105" font-weight="700" letter-spacing="-4" fill="#101C32">BiteFlow</text>
+  <text x="315" y="215" font-family="Arial, Helvetica, sans-serif" font-size="29" font-weight="600" letter-spacing="4" fill="#66758B">FAST &#8226; SIMPLE &#8226; RELIABLE</text>
+</svg>
