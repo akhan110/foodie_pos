@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:foodiepos/app/theme/app_colors.dart';
+import 'package:foodiepos/app/widgets/app_image_widget.dart';
 import 'package:foodiepos/app/widgets/custom_text_widget.dart';
 import 'package:foodiepos/modules/pos/controllers/pos_controller.dart';
 import 'package:foodiepos/modules/pos/model/cart_model.dart';
@@ -74,7 +74,7 @@ class PaymentView extends GetView<PosController> {
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // LEFT SECTION: PAYMENT METHODS & CASH INPUT
+                // LEFT SECTION: PAYMENT METHODS & CASH / SPLIT INPUT
                 Expanded(
                   flex: 6,
                   child: SingleChildScrollView(
@@ -86,7 +86,7 @@ class PaymentView extends GetView<PosController> {
 
                         const SizedBox(height: 20),
 
-                        // CASH / PAYMENT INPUT CARD
+                        // CASH / PAYMENT / SPLIT INPUT CARD
                         _buildPaymentInputCard(context),
                       ],
                     ),
@@ -111,6 +111,7 @@ class PaymentView extends GetView<PosController> {
   Widget _buildPaymentMethodsRow(BuildContext context) {
     return Obx(() {
       final selected = controller.selectedPaymentMethod.value;
+      final mode = controller.paymentMode.value;
 
       return Row(
         children: [
@@ -120,8 +121,11 @@ class PaymentView extends GetView<PosController> {
               title: 'Cash',
               subtitle: 'Pay with cash',
               iconWidget: const Text('💵', style: TextStyle(fontSize: 22)),
-              isSelected: selected == 'Cash',
-              onTap: () => controller.selectPaymentMethod('Cash'),
+              isSelected: mode == 'single' && selected == 'Cash',
+              onTap: () {
+                controller.paymentMode.value = 'single';
+                controller.selectPaymentMethod('Cash');
+              },
             ),
           ),
           const SizedBox(width: 12),
@@ -131,8 +135,11 @@ class PaymentView extends GetView<PosController> {
               title: 'Card',
               subtitle: 'Debit / credit',
               iconWidget: const Icon(Icons.credit_card_rounded, size: 22, color: Color(0xFF3B82F6)),
-              isSelected: selected == 'Card',
-              onTap: () => controller.selectPaymentMethod('Card'),
+              isSelected: mode == 'single' && selected == 'Card',
+              onTap: () {
+                controller.paymentMode.value = 'single';
+                controller.selectPaymentMethod('Card');
+              },
             ),
           ),
           const SizedBox(width: 12),
@@ -142,8 +149,11 @@ class PaymentView extends GetView<PosController> {
               title: 'QR Pay',
               subtitle: 'Scan and pay',
               iconWidget: const Icon(Icons.qr_code_2_rounded, size: 22, color: Color(0xFF8B5CF6)),
-              isSelected: selected == 'QR Pay',
-              onTap: () => controller.selectPaymentMethod('QR Pay'),
+              isSelected: mode == 'single' && selected == 'QR Pay',
+              onTap: () {
+                controller.paymentMode.value = 'single';
+                controller.selectPaymentMethod('QR Pay');
+              },
             ),
           ),
           const SizedBox(width: 12),
@@ -151,10 +161,14 @@ class PaymentView extends GetView<PosController> {
             child: _buildMethodTile(
               context: context,
               title: 'Split',
-              subtitle: 'Multiple methods',
+              subtitle: 'Cash + Card',
               iconWidget: const Icon(Icons.pie_chart_outline_rounded, size: 22, color: Color(0xFFF59E0B)),
-              isSelected: selected == 'Split',
-              onTap: () => controller.selectPaymentMethod('Split'),
+              isSelected: mode == 'split',
+              onTap: () {
+                controller.paymentMode.value = 'split';
+                controller.splitCashAmount.value = (controller.total / 2).roundToDouble();
+                controller.splitCardAmount.value = controller.total - controller.splitCashAmount.value;
+              },
             ),
           ),
         ],
@@ -242,7 +256,8 @@ class PaymentView extends GetView<PosController> {
     final inputBg = isDark ? const Color(0xFF252A36) : const Color(0xFFF4F6F9);
 
     return Obx(() {
-      final isCash = controller.selectedPaymentMethod.value == 'Cash';
+      final isSplit = controller.paymentMode.value == 'split';
+      final isCash = controller.paymentMode.value == 'single' && controller.selectedPaymentMethod.value == 'Cash';
       final totalAmount = controller.total;
       final change = controller.changeAmount;
       final isPlacing = controller.isPlacingOrder.value;
@@ -260,98 +275,169 @@ class PaymentView extends GetView<PosController> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            CustomTextWidget(
-              isCash ? 'CASH RECEIVED' : '${controller.selectedPaymentMethod.value.toUpperCase()} PAYMENT',
-              style: TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w700,
-                color: colors.onSurfaceVariant,
-                letterSpacing: 0.8,
-              ),
-            ),
-            const SizedBox(height: 12),
-
-            // LARGE CASH INPUT CONTAINER
-            Container(
-              height: 64,
-              padding: const EdgeInsets.symmetric(horizontal: 18),
-              decoration: BoxDecoration(
-                color: inputBg,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: isDark ? const Color(0xFF2D333F) : theme.dividerColor.withValues(alpha: 0.6),
+            if (isSplit) ...[
+              CustomTextWidget(
+                'SPLIT PAYMENT (CASH + CARD)',
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  color: colors.onSurfaceVariant,
+                  letterSpacing: 0.8,
                 ),
               ),
-              child: Row(
-                children: [
-                  CustomTextWidget(
-                    'Rs ',
-                    style: TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.w800,
-                      color: colors.onSurfaceVariant,
-                    ),
-                  ),
-                  Expanded(
-                    child: TextField(
-                      controller: controller.cashReceivedController,
-                      enabled: isCash,
-                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                      onChanged: controller.onCashInputChanged,
-                      style: TextStyle(
-                        fontSize: 26,
-                        fontWeight: FontWeight.w900,
-                        color: colors.onSurface,
-                      ),
-                      decoration: const InputDecoration(
-                        border: InputBorder.none,
-                        isDense: true,
-                        contentPadding: EdgeInsets.zero,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            if (isCash) ...[
               const SizedBox(height: 14),
 
-              // QUICK DENOMINATION SUGGESTION PILLS
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
+              // Split Cash Input
+              Row(
                 children: [
-                  _buildQuickPill(
-                    context: context,
-                    label: 'Exact (Rs ${totalAmount.toStringAsFixed(0)})',
-                    onTap: () => controller.setCashReceived(totalAmount),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text('Cash Portion (Rs)', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                        const SizedBox(height: 6),
+                        Container(
+                          height: 48,
+                          padding: const EdgeInsets.symmetric(horizontal: 12),
+                          decoration: BoxDecoration(
+                            color: inputBg,
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: theme.dividerColor),
+                          ),
+                          child: TextFormField(
+                            initialValue: controller.splitCashAmount.value.toStringAsFixed(0),
+                            keyboardType: TextInputType.number,
+                            onChanged: (val) {
+                              final cash = double.tryParse(val) ?? 0.0;
+                              controller.splitCashAmount.value = cash;
+                              controller.splitCardAmount.value = (totalAmount - cash).clamp(0.0, totalAmount);
+                            },
+                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                            decoration: const InputDecoration(border: InputBorder.none, prefixText: 'Rs '),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                  if (totalAmount < 1000)
-                    _buildQuickPill(
-                      context: context,
-                      label: 'Rs 1,000',
-                      onTap: () => controller.setCashReceived(1000),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text('Card Portion (Rs)', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                        const SizedBox(height: 6),
+                        Container(
+                          height: 48,
+                          padding: const EdgeInsets.symmetric(horizontal: 12),
+                          decoration: BoxDecoration(
+                            color: inputBg,
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: theme.dividerColor),
+                          ),
+                          child: Align(
+                            alignment: Alignment.centerLeft,
+                            child: Obx(() => Text(
+                                  'Rs ${controller.splitCardAmount.value.toStringAsFixed(0)}',
+                                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Color(0xFF3B82F6)),
+                                )),
+                          ),
+                        ),
+                      ],
                     ),
-                  if (totalAmount < 2000)
-                    _buildQuickPill(
-                      context: context,
-                      label: 'Rs 2,000',
-                      onTap: () => controller.setCashReceived(2000),
-                    ),
-                  if (totalAmount < 5000)
-                    _buildQuickPill(
-                      context: context,
-                      label: 'Rs 5,000',
-                      onTap: () => controller.setCashReceived(5000),
-                    ),
-                  _buildQuickPill(
-                    context: context,
-                    label: '+ Rs 500',
-                    onTap: () => controller.setCashReceived(controller.cashReceived.value + 500),
                   ),
                 ],
               ),
+            ] else ...[
+              CustomTextWidget(
+                isCash ? 'CASH RECEIVED' : '${controller.selectedPaymentMethod.value.toUpperCase()} PAYMENT',
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  color: colors.onSurfaceVariant,
+                  letterSpacing: 0.8,
+                ),
+              ),
+              const SizedBox(height: 12),
+
+              // LARGE CASH INPUT CONTAINER
+              Container(
+                height: 64,
+                padding: const EdgeInsets.symmetric(horizontal: 18),
+                decoration: BoxDecoration(
+                  color: inputBg,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: isDark ? const Color(0xFF2D333F) : theme.dividerColor.withValues(alpha: 0.6),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    CustomTextWidget(
+                      'Rs ',
+                      style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.w800,
+                        color: colors.onSurfaceVariant,
+                      ),
+                    ),
+                    Expanded(
+                      child: TextField(
+                        controller: controller.cashReceivedController,
+                        enabled: isCash,
+                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                        onChanged: controller.onCashInputChanged,
+                        style: TextStyle(
+                          fontSize: 26,
+                          fontWeight: FontWeight.w900,
+                          color: colors.onSurface,
+                        ),
+                        decoration: const InputDecoration(
+                          border: InputBorder.none,
+                          isDense: true,
+                          contentPadding: EdgeInsets.zero,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              if (isCash) ...[
+                const SizedBox(height: 14),
+
+                // QUICK DENOMINATION SUGGESTION PILLS
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    _buildQuickPill(
+                      context: context,
+                      label: 'Exact (Rs ${totalAmount.toStringAsFixed(0)})',
+                      onTap: () => controller.setCashReceived(totalAmount),
+                    ),
+                    _buildQuickPill(
+                      context: context,
+                      label: '+ Rs 100',
+                      onTap: () => controller.addCashPreset(100),
+                    ),
+                    _buildQuickPill(
+                      context: context,
+                      label: '+ Rs 500',
+                      onTap: () => controller.addCashPreset(500),
+                    ),
+                    _buildQuickPill(
+                      context: context,
+                      label: '+ Rs 1,000',
+                      onTap: () => controller.addCashPreset(1000),
+                    ),
+                    _buildQuickPill(
+                      context: context,
+                      label: '+ Rs 5,000',
+                      onTap: () => controller.addCashPreset(5000),
+                    ),
+                  ],
+                ),
+              ],
             ],
 
             const SizedBox(height: 28),
@@ -373,7 +459,7 @@ class PaymentView extends GetView<PosController> {
                     ),
                     const SizedBox(height: 2),
                     CustomTextWidget(
-                      'Rs ${change.toStringAsFixed(0)}',
+                      isSplit ? 'Rs 0' : 'Rs ${change.toStringAsFixed(0)}',
                       style: const TextStyle(
                         fontSize: 26,
                         fontWeight: FontWeight.w900,
@@ -469,6 +555,7 @@ class PaymentView extends GetView<PosController> {
       final items = controller.cartItems;
       final subtotal = controller.subtotal;
       final tax = controller.tax;
+      final discount = controller.discountAmount;
       final total = controller.total;
 
       return Container(
@@ -483,15 +570,33 @@ class PaymentView extends GetView<PosController> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            CustomTextWidget(
-              'Order Summary',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w800,
-                color: colors.onSurface,
-              ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                CustomTextWidget(
+                  'Order Summary',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800,
+                    color: colors.onSurface,
+                  ),
+                ),
+                TextButton.icon(
+                  onPressed: () => _showDiscountModal(context),
+                  icon: const Icon(Icons.local_offer_outlined, size: 14),
+                  label: Text(
+                    discount > 0 ? '${controller.discountValue.value.toInt()}% Off' : '+ Discount',
+                    style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
+                  ),
+                  style: TextButton.styleFrom(
+                    foregroundColor: AppColors.primary,
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    minimumSize: Size.zero,
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 12),
 
             // CART ITEMS LIST
             Expanded(
@@ -518,10 +623,27 @@ class PaymentView extends GetView<PosController> {
 
             // BREAKDOWN
             _buildSummaryRow('Subtotal', 'Rs ${subtotal.toStringAsFixed(0)}', colors),
-            const SizedBox(height: 8),
-            _buildSummaryRow('Tax', 'Rs ${tax.toStringAsFixed(0)}', colors),
-            const SizedBox(height: 8),
-            _buildSummaryRow('Discount', 'Rs 0', colors),
+            if (discount > 0) ...[
+              const SizedBox(height: 6),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    children: [
+                      const Text('Discount', style: TextStyle(fontSize: 13, color: Colors.green, fontWeight: FontWeight.bold)),
+                      const SizedBox(width: 4),
+                      InkWell(
+                        onTap: controller.removeDiscount,
+                        child: const Icon(Icons.cancel, size: 14, color: Colors.redAccent),
+                      ),
+                    ],
+                  ),
+                  Text('- Rs ${discount.toStringAsFixed(0)}', style: const TextStyle(fontSize: 13, color: Colors.green, fontWeight: FontWeight.bold)),
+                ],
+              ),
+            ],
+            const SizedBox(height: 6),
+            _buildSummaryRow('Tax (16% GST)', 'Rs ${tax.toStringAsFixed(0)}', colors),
             const SizedBox(height: 12),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -568,19 +690,20 @@ class PaymentView extends GetView<PosController> {
       ),
       child: Row(
         children: [
-          // THUMBNAIL
+          // THUMBNAIL with universal AppImageWidget
           Container(
             width: 38,
             height: 38,
-            padding: const EdgeInsets.all(5),
+            padding: const EdgeInsets.all(3),
             decoration: BoxDecoration(
               color: colors.surfaceContainerHighest,
               borderRadius: BorderRadius.circular(8),
             ),
-            child: SvgPicture.asset(
-              item.product.image,
-              fit: BoxFit.contain,
-              errorBuilder: (context, error, stackTrace) => const Icon(Icons.fastfood_outlined, size: 18),
+            child: AppImageWidget(
+              imagePath: item.product.image,
+              width: 38,
+              height: 38,
+              borderRadius: BorderRadius.circular(6),
             ),
           ),
           const SizedBox(width: 12),
@@ -673,6 +796,73 @@ class PaymentView extends GetView<PosController> {
           style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: colors.onSurface),
         ),
       ],
+    );
+  }
+
+  void _showDiscountModal(BuildContext context) {
+    Get.dialog(
+      AlertDialog(
+        title: const Text('Apply Order Discount'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                ActionChip(
+                  label: const Text('5% Off'),
+                  onPressed: () {
+                    controller.applyDiscount('percent', 5);
+                    Get.back();
+                  },
+                ),
+                ActionChip(
+                  label: const Text('10% Off'),
+                  onPressed: () {
+                    controller.applyDiscount('percent', 10);
+                    Get.back();
+                  },
+                ),
+                ActionChip(
+                  label: const Text('15% Off'),
+                  onPressed: () {
+                    controller.applyDiscount('percent', 15);
+                    Get.back();
+                  },
+                ),
+                ActionChip(
+                  label: const Text('Rs 100 Flat'),
+                  onPressed: () {
+                    controller.applyDiscount('flat', 100);
+                    Get.back();
+                  },
+                ),
+                ActionChip(
+                  label: const Text('Rs 200 Flat'),
+                  onPressed: () {
+                    controller.applyDiscount('flat', 200);
+                    Get.back();
+                  },
+                ),
+              ],
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              controller.removeDiscount();
+              Get.back();
+            },
+            child: const Text('Remove Discount', style: TextStyle(color: Colors.redAccent)),
+          ),
+          TextButton(
+            onPressed: () => Get.back(),
+            child: const Text('Cancel'),
+          ),
+        ],
+      ),
     );
   }
 }

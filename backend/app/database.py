@@ -78,6 +78,24 @@ def init_db_schema():
                     ALTER TABLE order_items ADD COLUMN IF NOT EXISTS quantity INTEGER DEFAULT 1;
                     ALTER TABLE order_items ADD COLUMN IF NOT EXISTS unit_price NUMERIC(10, 2) DEFAULT 0.0;
                     ALTER TABLE order_items ADD COLUMN IF NOT EXISTS total_price NUMERIC(10, 2) DEFAULT 0.0;
+
+                    CREATE TABLE IF NOT EXISTS shifts (
+                        id VARCHAR(50) PRIMARY KEY,
+                        cashier_id VARCHAR(50),
+                        cashier_name VARCHAR(100) NOT NULL DEFAULT 'Alex Khan',
+                        opening_float NUMERIC(10, 2) NOT NULL DEFAULT 0.0,
+                        closing_cash NUMERIC(10, 2),
+                        expected_cash NUMERIC(10, 2),
+                        cash_difference NUMERIC(10, 2),
+                        total_sales NUMERIC(10, 2) NOT NULL DEFAULT 0.0,
+                        cash_sales NUMERIC(10, 2) NOT NULL DEFAULT 0.0,
+                        card_sales NUMERIC(10, 2) NOT NULL DEFAULT 0.0,
+                        total_orders INTEGER NOT NULL DEFAULT 0,
+                        status VARCHAR(30) NOT NULL DEFAULT 'open',
+                        notes VARCHAR(500),
+                        opened_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+                        closed_at TIMESTAMPTZ
+                    );
                     """
                 )
             )

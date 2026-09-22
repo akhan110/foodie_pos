@@ -4,9 +4,11 @@ import 'package:foodiepos/app/utils/app_loader.dart';
 import 'package:foodiepos/data/data/dummy/dummy_model_data.dart';
 import 'package:foodiepos/modules/orders/controllers/orders_controller.dart';
 import 'package:foodiepos/modules/pos/model/cart_model.dart';
+import 'package:foodiepos/modules/pos/model/parked_order_model.dart';
 import 'package:foodiepos/modules/pos/model/product_category.dart';
 import 'package:foodiepos/modules/pos/model/product_model.dart';
 import 'package:foodiepos/modules/pos/repository/pos_repository.dart';
+import 'package:foodiepos/modules/pos/widgets/new_order/dialogs/receipt_dialog.dart';
 import 'package:foodiepos/modules/shell/controller/main_shell_controller.dart';
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
@@ -33,12 +35,24 @@ class PosController extends GetxController {
   final RxList<CartItemModel> cartItems = <CartItemModel>[].obs;
   final RxString orderType = 'Dine In'.obs;
 
+  // Parked / Held Orders
+  final RxList<ParkedOrderModel> parkedOrders = <ParkedOrderModel>[].obs;
+
+  // Discounts
+  final RxString discountType = 'none'.obs; // 'none', 'percent', 'flat'
+  final RxDouble discountValue = 0.0.obs;
+
   // Payment View State
   final RxBool isPaymentView = false.obs;
   final RxString selectedPaymentMethod = 'Cash'.obs;
   final RxDouble cashReceived = 0.0.obs;
   final TextEditingController cashReceivedController = TextEditingController();
   final RxBool isPlacingOrder = false.obs;
+
+  // Split Payment State
+  final RxString paymentMode = 'single'.obs; // 'single', 'split'
+  final RxDouble splitCashAmount = 0.0.obs;
+  final RxDouble splitCardAmount = 0.0.obs;
 
   @override
   void onInit() {
@@ -60,7 +74,6 @@ class PosController extends GetxController {
       if (response.success && response.data != null && response.data!.isNotEmpty) {
         categories.assignAll(response.data!);
       } else {
-        // Fallback default categories
         categories.assignAll([
           ProductCategoryModel(id: 'burgers', name: 'Burgers', slug: 'burgers'),
           ProductCategoryModel(id: 'chicken', name: 'Chicken', slug: 'chicken'),
@@ -95,13 +108,11 @@ class PosController extends GetxController {
       if (response.success && response.data != null && response.data!.isNotEmpty) {
         allProducts.assignAll(response.data!);
       } else {
-        // Fallback to local catalog if API is offline
         allProducts.assignAll(ProductDummyData.products);
       }
       _applyFilters();
     } catch (e) {
       debugPrint('Error fetching products: $e');
-      // Offline fallback
       allProducts.assignAll(ProductDummyData.products);
       _applyFilters();
     } finally {
@@ -127,14 +138,12 @@ class PosController extends GetxController {
   void _applyFilters() {
     List<ProductModel> list = List.from(allProducts);
 
-    // 1. Top filter (All / Popular / Combos)
     if (selectedTopFilter.value == 'popular') {
       list = list.where((p) => p.isPopular).toList();
     } else if (selectedTopFilter.value == 'combos') {
       list = list.where((p) => p.isCombo).toList();
     }
 
-    // 2. Category filter
     if (selectedCategory.value != 'all') {
       list = list.where((p) {
         final catName = p.category.name.toLowerCase();
@@ -143,7 +152,6 @@ class PosController extends GetxController {
       }).toList();
     }
 
-    // 3. Search query
     if (searchQuery.value.isNotEmpty) {
       list = list.where((p) {
         return p.name.toLowerCase().contains(searchQuery.value);
@@ -199,7 +207,6 @@ class PosController extends GetxController {
   }
 
   void quickIncrementProduct(ProductModel product) {
-    // Increment the first matching cart item or add a regular default item
     final index = cartItems.indexWhere((item) => item.product.id == product.id);
     if (index >= 0) {
       cartItems[index].quantity += 1;
@@ -250,7 +257,87 @@ class PosController extends GetxController {
 
   void clearCart() {
     cartItems.clear();
+    removeDiscount();
   }
+
+  // ===========================================================================
+  // PARKED ORDERS (HOLD CART)
+  // ===========================================================================
+
+  void parkCurrentOrder({String? label}) {
+    if (cartItems.isEmpty) {
+      AppLoader.showInfo('Cart is empty. Nothing to hold.');
+      return;
+    }
+
+    final parked = ParkedOrderModel(
+      id: 'park_${DateTime.now().millisecondsSinceEpoch}',
+      label: label ?? 'Order #${parkedOrders.length + 1} (${orderType.value})',
+      items: List.from(cartItems),
+      orderType: orderType.value,
+      parkedAt: DateTime.now(),
+    );
+
+    parkedOrders.add(parked);
+    clearCart();
+    AppLoader.showSuccess('Order held successfully! Parked count: ${parkedOrders.length}');
+  }
+
+  void restoreParkedOrder(String id) {
+    final index = parkedOrders.indexWhere((p) => p.id == id);
+    if (index >= 0) {
+      final parked = parkedOrders.removeAt(index);
+      orderType.value = parked.orderType;
+      cartItems.assignAll(parked.items);
+      AppLoader.showSuccess('Restored order "${parked.label}" to cart');
+    }
+  }
+
+  void deleteParkedOrder(String id) {
+    parkedOrders.removeWhere((p) => p.id == id);
+    AppLoader.showInfo('Parked order deleted');
+  }
+
+  // ===========================================================================
+  // DISCOUNT OPERATIONS
+  // ===========================================================================
+
+  void applyDiscount(String type, double value) {
+    discountType.value = type;
+    discountValue.value = value;
+    if (isPaymentView.value && selectedPaymentMethod.value != 'Cash') {
+      cashReceived.value = total;
+      cashReceivedController.text = total.round().toString();
+    }
+  }
+
+  void removeDiscount() {
+    discountType.value = 'none';
+    discountValue.value = 0.0;
+  }
+
+  double get discountAmount {
+    if (discountType.value == 'percent') {
+      return (subtotal * (discountValue.value / 100)).clamp(0.0, subtotal);
+    } else if (discountType.value == 'flat') {
+      return discountValue.value.clamp(0.0, subtotal);
+    }
+    return 0.0;
+  }
+
+  // ===========================================================================
+  // TOTALS CALCULATION
+  // ===========================================================================
+
+  double get subtotal => cartItems.fold(0.0, (sum, item) => sum + item.subtotal);
+
+  double get tax => (subtotal - discountAmount) > 0 ? (subtotal - discountAmount) * 0.16 : 0.0;
+
+  double get total => (subtotal - discountAmount + tax).clamp(0.0, double.infinity);
+
+  // ===========================================================================
+  // PAYMENT FLOW
+  // ===========================================================================
 
   @override
   void onClose() {
@@ -262,7 +349,6 @@ class PosController extends GetxController {
     if (cartItems.isEmpty) return;
 
     final currentTotal = total;
-    // Suggest round cash received e.g. 2000 for 1860, or exact
     final rounded = (currentTotal > 0 && currentTotal % 500 != 0)
         ? ((currentTotal / 500).ceil() * 500).toDouble()
         : currentTotal;
@@ -270,6 +356,9 @@ class PosController extends GetxController {
     cashReceived.value = rounded;
     cashReceivedController.text = rounded.round().toString();
     selectedPaymentMethod.value = 'Cash';
+    paymentMode.value = 'single';
+    splitCashAmount.value = currentTotal / 2;
+    splitCardAmount.value = currentTotal / 2;
     isPaymentView.value = true;
   }
 
@@ -288,6 +377,12 @@ class PosController extends GetxController {
   void setCashReceived(double amount) {
     cashReceived.value = amount;
     cashReceivedController.text = amount.round().toString();
+  }
+
+  void addCashPreset(double noteAmount) {
+    final current = double.tryParse(cashReceivedController.text) ?? 0.0;
+    final updated = current + noteAmount;
+    setCashReceived(updated);
   }
 
   void onCashInputChanged(String text) {
@@ -337,67 +432,77 @@ class PosController extends GetxController {
         };
       }).toList();
 
+      final paymentMethodStr = paymentMode.value == 'split'
+          ? 'Split (Cash Rs ${splitCashAmount.value.toStringAsFixed(0)} + Card Rs ${splitCardAmount.value.toStringAsFixed(0)})'
+          : selectedPaymentMethod.value;
+
+      final double actualReceived = paymentMode.value == 'split'
+          ? total
+          : (selectedPaymentMethod.value == 'Cash' ? cashReceived.value : total);
+
+      final double actualChange = paymentMode.value == 'split'
+          ? 0.0
+          : (selectedPaymentMethod.value == 'Cash' ? changeAmount : 0.0);
+
       final orderPayload = {
         'order_type': orderType.value,
         'status': 'Completed',
         'table_number': calculatedTable,
         'cashier_name': cashierName,
-        'payment_method': selectedPaymentMethod.value,
+        'payment_method': paymentMethodStr,
         'subtotal': subtotal,
         'tax': tax,
-        'discount': 0.0,
+        'discount': discountAmount,
         'total': total,
-        'amount_received': selectedPaymentMethod.value == 'Cash'
-            ? cashReceived.value
-            : total,
-        'change_amount': selectedPaymentMethod.value == 'Cash'
-            ? changeAmount
-            : 0.0,
+        'amount_received': actualReceived,
+        'change_amount': actualChange,
         'items': payloadItems,
       };
 
       final response = await _posRepository.createOrder(orderPayload);
+      final orderNumber = (response.data != null && response.data!['order_number'] != null)
+          ? response.data!['order_number'].toString()
+          : '#${DateTime.now().millisecondsSinceEpoch.toString().substring(8)}';
 
-      if (response.success) {
-        final orderData = response.data;
-        final orderNumber = (orderData != null && orderData['order_number'] != null)
-            ? orderData['order_number'].toString()
-            : 'New Order';
+      final receiptData = {
+        'order_number': orderNumber,
+        'order_type': orderType.value,
+        'table_number': calculatedTable,
+        'cashier_name': cashierName,
+        'payment_method': paymentMethodStr,
+        'subtotal': subtotal,
+        'tax': tax,
+        'discount': discountAmount,
+        'total': total,
+        'amount_received': actualReceived,
+        'change_amount': actualChange,
+        'items': payloadItems,
+      };
 
-        AppLoader.showSuccess('Order $orderNumber placed successfully!');
+      AppLoader.showSuccess('Order $orderNumber placed successfully!');
 
-        // 1. Clear cart & close payment view
-        clearCart();
-        isPaymentView.value = false;
+      // Clear cart & close payment view
+      clearCart();
+      isPaymentView.value = false;
 
-        // 2. Refresh Orders tab if loaded and switch to Orders tab
-        if (Get.isRegistered<OrdersController>()) {
-          Get.find<OrdersController>().loadOrders(showLoading: false);
-        }
+      // Refresh Orders tab
+      if (Get.isRegistered<OrdersController>()) {
+        Get.find<OrdersController>().loadOrders(showLoading: false);
+      }
 
-        if (Get.isRegistered<MainShellController>()) {
-          Get.find<MainShellController>().changePage(2);
-        }
-      } else {
-        // Graceful fallback for offline / server error
-        final fallbackNum = '#${DateTime.now().millisecondsSinceEpoch.toString().substring(8)}';
-        AppLoader.showSuccess('Order $fallbackNum placed successfully!');
-
-        clearCart();
-        isPaymentView.value = false;
-
-        if (Get.isRegistered<OrdersController>()) {
-          Get.find<OrdersController>().loadOrders(showLoading: false);
-        }
-
-        if (Get.isRegistered<MainShellController>()) {
-          Get.find<MainShellController>().changePage(2);
-        }
+      // Show Thermal Receipt Popup
+      if (Get.context != null) {
+        ReceiptDialog.show(Get.context!, receiptData, onPrintComplete: () {
+          if (Get.isRegistered<MainShellController>()) {
+            Get.find<MainShellController>().changePage(2);
+          }
+        });
+      } else if (Get.isRegistered<MainShellController>()) {
+        Get.find<MainShellController>().changePage(2);
       }
     } catch (e) {
-      // Graceful fallback when network / server error occurs
       final fallbackNum = '#${DateTime.now().millisecondsSinceEpoch.toString().substring(8)}';
-      AppLoader.showSuccess('Order $fallbackNum placed successfully!');
+      AppLoader.showSuccess('Order $fallbackNum placed successfully (Offline)!');
 
       clearCart();
       isPaymentView.value = false;
@@ -405,7 +510,6 @@ class PosController extends GetxController {
       if (Get.isRegistered<OrdersController>()) {
         Get.find<OrdersController>().loadOrders(showLoading: false);
       }
-
       if (Get.isRegistered<MainShellController>()) {
         Get.find<MainShellController>().changePage(2);
       }
@@ -413,12 +517,4 @@ class PosController extends GetxController {
       isPlacingOrder.value = false;
     }
   }
-
-  double get subtotal =>
-      cartItems.fold(0.0, (sum, item) => sum + item.subtotal);
-
-  double get tax => subtotal * 0.16; // 16% GST / Tax
-
-  double get total => subtotal + tax;
 }
-

@@ -31,10 +31,7 @@ class ProductEditorDialog extends StatelessWidget {
         backgroundColor: Colors.transparent,
         insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
         child: ConstrainedBox(
-          constraints: const BoxConstraints(
-            maxWidth: 620,
-            maxHeight: 760,
-          ),
+          constraints: const BoxConstraints(maxWidth: 620, maxHeight: 760),
           child: ProductEditorDialog(controller: ctrl),
         ),
       ),
@@ -84,7 +81,9 @@ class ProductEditorDialog extends StatelessWidget {
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: Icon(
-                        isNew ? Icons.add_circle_outline : Icons.edit_note_rounded,
+                        isNew
+                            ? Icons.add_circle_outline
+                            : Icons.edit_note_rounded,
                         color: AppColors.primary,
                         size: 20,
                       ),
@@ -120,17 +119,26 @@ class ProductEditorDialog extends StatelessWidget {
                   child: Container(
                     padding: const EdgeInsets.all(6),
                     decoration: BoxDecoration(
-                      color: isDark ? const Color(0xFF252A36) : const Color(0xFFF1F3F7),
+                      color: isDark
+                          ? const Color(0xFF252A36)
+                          : const Color(0xFFF1F3F7),
                       shape: BoxShape.circle,
                     ),
-                    child: Icon(Icons.close, size: 16, color: colors.onSurfaceVariant),
+                    child: Icon(
+                      Icons.close,
+                      size: 16,
+                      color: colors.onSurfaceVariant,
+                    ),
                   ),
                 ),
               ],
             ),
 
             const SizedBox(height: 14),
-            Divider(height: 1, color: theme.dividerColor.withValues(alpha: 0.4)),
+            Divider(
+              height: 1,
+              color: theme.dividerColor.withValues(alpha: 0.4),
+            ),
             const SizedBox(height: 14),
 
             // FORM BODY (Scrollable)
@@ -152,10 +160,14 @@ class ProductEditorDialog extends StatelessWidget {
                                 width: 150,
                                 height: 130,
                                 decoration: BoxDecoration(
-                                  color: isDark ? const Color(0xFF252A36) : const Color(0xFFFAF5EE),
+                                  color: isDark
+                                      ? const Color(0xFF252A36)
+                                      : const Color(0xFFFAF5EE),
                                   borderRadius: BorderRadius.circular(14),
                                   border: Border.all(
-                                    color: theme.dividerColor.withValues(alpha: 0.6),
+                                    color: theme.dividerColor.withValues(
+                                      alpha: 0.6,
+                                    ),
                                   ),
                                 ),
                                 padding: const EdgeInsets.all(10),
@@ -170,7 +182,9 @@ class ProductEditorDialog extends StatelessWidget {
                                     ),
                                     if (controller.isUploadingImage.value)
                                       Container(
-                                        color: Colors.black.withValues(alpha: 0.5),
+                                        color: Colors.black.withValues(
+                                          alpha: 0.5,
+                                        ),
                                         child: const Center(
                                           child: CircularProgressIndicator(
                                             strokeWidth: 2,
@@ -188,14 +202,24 @@ class ProductEditorDialog extends StatelessWidget {
                                 onPressed: controller.isUploadingImage.value
                                     ? null
                                     : () => controller.pickAndUploadRealImage(),
-                                icon: const Icon(Icons.cloud_upload_outlined, size: 14, color: Colors.white),
+                                icon: const Icon(
+                                  Icons.cloud_upload_outlined,
+                                  size: 14,
+                                  color: Colors.white,
+                                ),
                                 label: const Text(
                                   'Upload Photo',
-                                  style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Colors.white),
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w700,
+                                    color: Colors.white,
+                                  ),
                                 ),
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: AppColors.primary,
-                                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                  ),
                                   minimumSize: const Size(double.infinity, 32),
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(8),
@@ -206,8 +230,12 @@ class ProductEditorDialog extends StatelessWidget {
 
                               // CHOOSE GRAPHIC / ICON
                               OutlinedButton.icon(
-                                onPressed: () => _showSelectImageModal(context, controller),
-                                icon: const Icon(Icons.grid_view_rounded, size: 13),
+                                onPressed: () =>
+                                    _showSelectImageModal(context, controller),
+                                icon: const Icon(
+                                  Icons.grid_view_rounded,
+                                  size: 13,
+                                ),
                                 label: const Text(
                                   'Preset Icon',
                                   style: TextStyle(fontSize: 11),
@@ -215,9 +243,13 @@ class ProductEditorDialog extends StatelessWidget {
                                 style: OutlinedButton.styleFrom(
                                   foregroundColor: colors.onSurface,
                                   side: BorderSide(
-                                    color: theme.dividerColor.withValues(alpha: 0.6),
+                                    color: theme.dividerColor.withValues(
+                                      alpha: 0.6,
+                                    ),
                                   ),
-                                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                  ),
                                   minimumSize: const Size(double.infinity, 28),
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(8),
@@ -249,19 +281,25 @@ class ProductEditorDialog extends StatelessWidget {
                               const SizedBox(height: 4),
                               Container(
                                 height: 38,
-                                padding: const EdgeInsets.symmetric(horizontal: 12),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                ),
                                 decoration: BoxDecoration(
                                   color: colors.surfaceContainer,
                                   borderRadius: BorderRadius.circular(8),
                                   border: Border.all(
-                                    color: theme.dividerColor.withValues(alpha: 0.6),
+                                    color: theme.dividerColor.withValues(
+                                      alpha: 0.6,
+                                    ),
                                   ),
                                 ),
                                 child: DropdownButtonHideUnderline(
                                   child: DropdownButton<String>(
                                     value: controller.formCategory.value,
                                     isExpanded: true,
-                                    dropdownColor: isDark ? const Color(0xFF1E222B) : Colors.white,
+                                    dropdownColor: isDark
+                                        ? const Color(0xFF1E222B)
+                                        : Colors.white,
                                     onChanged: (val) {
                                       if (val != null) {
                                         controller.onCategoryFormChanged(val);
@@ -319,7 +357,8 @@ class ProductEditorDialog extends StatelessWidget {
                         maxLength: 180,
                         style: TextStyle(fontSize: 12, color: colors.onSurface),
                         decoration: InputDecoration(
-                          hintText: 'Juicy smashed beef patty with special sauce...',
+                          hintText:
+                              'Juicy smashed beef patty with special sauce...',
                           hintStyle: TextStyle(
                             fontSize: 12,
                             color: colors.onSurfaceVariant,
@@ -341,7 +380,10 @@ class ProductEditorDialog extends StatelessWidget {
                           onTap: () => _showAddSizeModal(context, controller),
                           borderRadius: BorderRadius.circular(6),
                           child: const Padding(
-                            padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            padding: EdgeInsets.symmetric(
+                              horizontal: 6,
+                              vertical: 2,
+                            ),
                             child: Text(
                               '+ Add Size',
                               style: TextStyle(
@@ -384,7 +426,9 @@ class ProductEditorDialog extends StatelessWidget {
                               color: colors.surfaceContainer,
                               borderRadius: BorderRadius.circular(6),
                               border: Border.all(
-                                color: theme.dividerColor.withValues(alpha: 0.5),
+                                color: theme.dividerColor.withValues(
+                                  alpha: 0.5,
+                                ),
                               ),
                             ),
                             child: Row(
@@ -400,7 +444,8 @@ class ProductEditorDialog extends StatelessWidget {
                                 ),
                                 const SizedBox(width: 4),
                                 InkWell(
-                                  onTap: () => controller.removeSizeOption(size.id),
+                                  onTap: () =>
+                                      controller.removeSizeOption(size.id),
                                   child: Icon(
                                     Icons.close,
                                     size: 13,
@@ -425,7 +470,10 @@ class ProductEditorDialog extends StatelessWidget {
                           onTap: () => _showAddAddonModal(context, controller),
                           borderRadius: BorderRadius.circular(6),
                           child: const Padding(
-                            padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            padding: EdgeInsets.symmetric(
+                              horizontal: 6,
+                              vertical: 2,
+                            ),
                             child: Text(
                               '+ Add Extra',
                               style: TextStyle(
@@ -465,7 +513,9 @@ class ProductEditorDialog extends StatelessWidget {
                               color: colors.surfaceContainer,
                               borderRadius: BorderRadius.circular(6),
                               border: Border.all(
-                                color: theme.dividerColor.withValues(alpha: 0.5),
+                                color: theme.dividerColor.withValues(
+                                  alpha: 0.5,
+                                ),
                               ),
                             ),
                             child: Row(
@@ -499,7 +549,10 @@ class ProductEditorDialog extends StatelessWidget {
 
                     // AVAILABILITY TOGGLE
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 8,
+                      ),
                       decoration: BoxDecoration(
                         color: colors.surfaceContainer,
                         borderRadius: BorderRadius.circular(10),
@@ -533,7 +586,8 @@ class ProductEditorDialog extends StatelessWidget {
                           Switch(
                             value: controller.formIsAvailable.value,
                             activeThumbColor: AppColors.primary,
-                            onChanged: (val) => controller.formIsAvailable.value = val,
+                            onChanged: (val) =>
+                                controller.formIsAvailable.value = val,
                           ),
                         ],
                       ),
@@ -544,7 +598,10 @@ class ProductEditorDialog extends StatelessWidget {
             ),
 
             const SizedBox(height: 16),
-            Divider(height: 1, color: theme.dividerColor.withValues(alpha: 0.4)),
+            Divider(
+              height: 1,
+              color: theme.dividerColor.withValues(alpha: 0.4),
+            ),
             const SizedBox(height: 14),
 
             // BOTTOM ACTIONS
@@ -557,8 +614,15 @@ class ProductEditorDialog extends StatelessWidget {
                       Get.back();
                       _showDeleteConfirm(context, selectedProd, controller);
                     },
-                    icon: const Icon(Icons.delete_outline, size: 16, color: Colors.red),
-                    label: const Text('Delete Item', style: TextStyle(color: Colors.red, fontSize: 13)),
+                    icon: const Icon(
+                      Icons.delete_outline,
+                      size: 16,
+                      color: Colors.red,
+                    ),
+                    label: const Text(
+                      'Delete Item',
+                      style: TextStyle(color: Colors.red, fontSize: 13),
+                    ),
                   )
                 else
                   const SizedBox(),
@@ -572,12 +636,18 @@ class ProductEditorDialog extends StatelessWidget {
                         side: BorderSide(
                           color: theme.dividerColor.withValues(alpha: 0.6),
                         ),
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 10,
+                        ),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(8),
                         ),
                       ),
-                      child: const Text('Cancel', style: TextStyle(fontSize: 13)),
+                      child: const Text(
+                        'Cancel',
+                        style: TextStyle(fontSize: 13),
+                      ),
                     ),
                     const SizedBox(width: 10),
                     ElevatedButton.icon(
@@ -591,18 +661,32 @@ class ProductEditorDialog extends StatelessWidget {
                           ? const SizedBox(
                               width: 14,
                               height: 14,
-                              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
                             )
-                          : const Icon(Icons.check_rounded, size: 16, color: Colors.white),
+                          : const Icon(
+                              Icons.check_rounded,
+                              size: 16,
+                              color: Colors.white,
+                            ),
                       label: Text(
                         isNew ? 'Create Item' : 'Save Changes',
-                        style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: Colors.white),
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 13,
+                          color: Colors.white,
+                        ),
                       ),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.primary,
                         foregroundColor: Colors.white,
                         elevation: 0,
-                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 20,
+                          vertical: 10,
+                        ),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(8),
                         ),
@@ -644,9 +728,7 @@ class ProductEditorDialog extends StatelessWidget {
       decoration: BoxDecoration(
         color: colors.surfaceContainer,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-          color: theme.dividerColor.withValues(alpha: 0.6),
-        ),
+        border: Border.all(color: theme.dividerColor.withValues(alpha: 0.6)),
       ),
       child: TextField(
         controller: textController,
@@ -654,10 +736,7 @@ class ProductEditorDialog extends StatelessWidget {
         style: TextStyle(fontSize: 13, color: colors.onSurface),
         decoration: InputDecoration(
           hintText: hint,
-          hintStyle: TextStyle(
-            fontSize: 12,
-            color: colors.onSurfaceVariant,
-          ),
+          hintStyle: TextStyle(fontSize: 12, color: colors.onSurfaceVariant),
           border: InputBorder.none,
           contentPadding: const EdgeInsets.symmetric(
             horizontal: 12,
@@ -709,7 +788,10 @@ class ProductEditorDialog extends StatelessWidget {
               }
             },
             style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
-            child: const Text('Add Size', style: TextStyle(color: Colors.white)),
+            child: const Text(
+              'Add Size',
+              style: TextStyle(color: Colors.white),
+            ),
           ),
         ],
       ),
@@ -757,7 +839,10 @@ class ProductEditorDialog extends StatelessWidget {
               }
             },
             style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
-            child: const Text('Add Add-on', style: TextStyle(color: Colors.white)),
+            child: const Text(
+              'Add Add-on',
+              style: TextStyle(color: Colors.white),
+            ),
           ),
         ],
       ),

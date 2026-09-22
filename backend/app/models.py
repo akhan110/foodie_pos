@@ -112,3 +112,23 @@ class OrderItem(Base):
     item_total = Column(Numeric(10, 2), nullable=True)
 
     order_rel = relationship("Order", back_populates="items")
+
+
+class Shift(Base):
+    __tablename__ = "shifts"
+
+    id = Column(String(50), primary_key=True)
+    cashier_id = Column(String(50), nullable=True, index=True)
+    cashier_name = Column(String(100), nullable=False, default="Alex Khan")
+    opening_float = Column(Numeric(10, 2), nullable=False, default=0.0)
+    closing_cash = Column(Numeric(10, 2), nullable=True)
+    expected_cash = Column(Numeric(10, 2), nullable=True)
+    cash_difference = Column(Numeric(10, 2), nullable=True)
+    total_sales = Column(Numeric(10, 2), nullable=False, default=0.0)
+    cash_sales = Column(Numeric(10, 2), nullable=False, default=0.0)
+    card_sales = Column(Numeric(10, 2), nullable=False, default=0.0)
+    total_orders = Column(Integer, nullable=False, default=0)
+    status = Column(String(30), nullable=False, default="open")  # open, closed
+    notes = Column(String(500), nullable=True)
+    opened_at = Column(DateTime(timezone=True), default=datetime.utcnow)
+    closed_at = Column(DateTime(timezone=True), nullable=True)

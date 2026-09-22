@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:foodiepos/app/theme/app_colors.dart';
 import 'package:foodiepos/app/widgets/custom_text_widget.dart';
 import 'package:foodiepos/modules/pos/controllers/pos_controller.dart';
+import 'package:foodiepos/modules/pos/widgets/new_order/dialogs/parked_orders_dialog.dart';
 import 'package:foodiepos/modules/pos/widgets/new_order/right_view_cart/cart_item_list.dart';
 import 'package:foodiepos/modules/pos/widgets/new_order/right_view_cart/order_type_tabs.dart';
 import 'package:get/get.dart';
@@ -25,36 +26,115 @@ class CartSection extends GetView<PosController> {
         ),
         child: Column(
           children: [
-            // HEADER
+            // HEADER: TITLE + PARKED BADGE + HOLD / CLEAR
             Row(
               children: [
                 Expanded(
-                  child: CustomTextWidget(
-                    'Current Order',
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w800,
-                      color: colors.onSurface,
-                    ),
+                  child: Row(
+                    children: [
+                      CustomTextWidget(
+                        'Current Order',
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w800,
+                          color: colors.onSurface,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+
+                      // PARKED ORDERS BADGE
+                      Obx(() {
+                        final count = controller.parkedOrders.length;
+                        if (count == 0) return const SizedBox.shrink();
+                        return InkWell(
+                          onTap: () => ParkedOrdersDialog.show(context, controller),
+                          borderRadius: BorderRadius.circular(12),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                            decoration: BoxDecoration(
+                              color: AppColors.primary,
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(Icons.pause, size: 12, color: Colors.white),
+                                const SizedBox(width: 2),
+                                Text(
+                                  'Parked: $count',
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      }),
+                    ],
                   ),
                 ),
 
+                // HOLD / PARK ORDER BUTTON
                 Obx(() {
-                  if (controller.cartItems.isEmpty) return const SizedBox.shrink();
-                  return TextButton(
-                    onPressed: controller.clearCart,
-                    style: TextButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(horizontal: 8),
-                      minimumSize: Size.zero,
-                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    ),
-                    child: const CustomTextWidget(
-                      'Clear all',
-                      style: TextStyle(
-                        color: AppColors.error,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
+                  if (controller.cartItems.isEmpty) {
+                    if (controller.parkedOrders.isNotEmpty) {
+                      return TextButton.icon(
+                        onPressed: () => ParkedOrdersDialog.show(context, controller),
+                        icon: const Icon(Icons.pause_circle_outline, size: 14),
+                        label: const Text('Parked', style: TextStyle(fontSize: 11)),
+                        style: TextButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(horizontal: 6),
+                          minimumSize: Size.zero,
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        ),
+                      );
+                    }
+                    return const SizedBox.shrink();
+                  }
+
+                  return Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // Hold Order Button
+                      TextButton.icon(
+                        onPressed: () => controller.parkCurrentOrder(),
+                        icon: const Icon(Icons.pause_circle_filled, size: 14, color: AppColors.primary),
+                        label: const Text(
+                          'Hold',
+                          style: TextStyle(
+                            color: AppColors.primary,
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        style: TextButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(horizontal: 6),
+                          minimumSize: Size.zero,
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        ),
                       ),
-                    ),
+                      const SizedBox(width: 4),
+
+                      // Clear All Button
+                      TextButton(
+                        onPressed: controller.clearCart,
+                        style: TextButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(horizontal: 6),
+                          minimumSize: Size.zero,
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        ),
+                        child: const CustomTextWidget(
+                          'Clear',
+                          style: TextStyle(
+                            color: AppColors.error,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ],
                   );
                 }),
               ],
@@ -83,6 +163,7 @@ class CartSection extends GetView<PosController> {
   Widget _buildCartSummary(BuildContext context, ColorScheme colors, ThemeData theme) {
     return Obx(() {
       final subtotal = controller.subtotal;
+      final discount = controller.discountAmount;
       final tax = controller.tax;
       final total = controller.total;
       final itemCount = controller.cartItems.fold(0, (sum, i) => sum + i.quantity);
@@ -111,6 +192,30 @@ class CartSection extends GetView<PosController> {
               ],
             ),
             const SizedBox(height: 4),
+
+            // DISCOUNT (IF APPLIED)
+            if (discount > 0) ...[
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    children: [
+                      const Text('Discount', style: TextStyle(fontSize: 12, color: Colors.green, fontWeight: FontWeight.bold)),
+                      const SizedBox(width: 4),
+                      InkWell(
+                        onTap: controller.removeDiscount,
+                        child: const Icon(Icons.cancel, size: 12, color: Colors.redAccent),
+                      ),
+                    ],
+                  ),
+                  Text(
+                    '- Rs ${discount.toStringAsFixed(0)}',
+                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.green),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 4),
+            ],
 
             // TAX
             Row(

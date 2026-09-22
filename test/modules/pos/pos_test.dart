@@ -367,6 +367,54 @@ void main() {
       expect(controller.cartItems.isEmpty, true);
       expect(controller.isPaymentView.value, false);
     });
+
+    test('7. Parked order stashing, count, and restoration', () async {
+      await controller.loadMenuData();
+      final prod = controller.allProducts.first;
+      controller.addToCart(prod);
+      expect(controller.cartItems.length, 1);
+      expect(controller.parkedOrders.isEmpty, true);
+
+      // Park current order
+      controller.parkCurrentOrder(label: 'Table 4 Customer');
+      expect(controller.cartItems.isEmpty, true);
+      expect(controller.parkedOrders.length, 1);
+      expect(controller.parkedOrders.first.label, 'Table 4 Customer');
+
+      // Restore order
+      final parkedId = controller.parkedOrders.first.id;
+      controller.restoreParkedOrder(parkedId);
+      expect(controller.cartItems.length, 1);
+      expect(controller.parkedOrders.isEmpty, true);
+    });
+
+    test('8. Discounts and Split payment calculations', () async {
+      await controller.loadMenuData();
+      final prod = controller.allProducts.first; // Price: 620
+      controller.addToCart(prod);
+
+      expect(controller.subtotal, 620.0);
+      expect(controller.discountAmount, 0.0);
+
+      // Apply 10% discount
+      controller.applyDiscount('percent', 10);
+      expect(controller.discountAmount, 62.0);
+
+      // Apply Rs 100 flat discount
+      controller.applyDiscount('flat', 100);
+      expect(controller.discountAmount, 100.0);
+
+      // Remove discount
+      controller.removeDiscount();
+      expect(controller.discountAmount, 0.0);
+
+      // Open payment and test split
+      controller.openPayment();
+      controller.paymentMode.value = 'split';
+      controller.splitCashAmount.value = 300.0;
+      controller.splitCardAmount.value = controller.total - 300.0;
+      expect(controller.splitCashAmount.value + controller.splitCardAmount.value, controller.total);
+    });
   });
 
   group('MenuManagementController Tests', () {

@@ -6,6 +6,9 @@ import 'package:foodiepos/app/theme/theme_controller.dart';
 import 'package:foodiepos/app/widgets/custom_text_widget.dart';
 import 'package:foodiepos/app/widgets/search_widget.dart';
 import 'package:foodiepos/modules/shell/controllers/connectivity_controller.dart';
+import 'package:foodiepos/modules/shifts/controllers/shift_controller.dart';
+import 'package:foodiepos/modules/shifts/widgets/close_shift_dialog.dart';
+import 'package:foodiepos/modules/shifts/widgets/open_shift_dialog.dart';
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
 
@@ -101,6 +104,11 @@ class _SecondaryAppBarState extends State<SecondaryAppBar> {
 
           const SizedBox(width: 20),
 
+          // ---------------- SHIFT STATUS ----------------
+          _buildShiftButton(context),
+
+          const SizedBox(width: 12),
+
           // ---------------- ONLINE ----------------
           Obx(
             () => _StatusBadge(isOnline: connectivityController.isOnline.value),
@@ -152,6 +160,57 @@ class _SecondaryAppBarState extends State<SecondaryAppBar> {
         ],
       ),
     );
+  }
+
+  Widget _buildShiftButton(BuildContext context) {
+    if (!Get.isRegistered<ShiftController>()) {
+      Get.put(ShiftController());
+    }
+    final shiftController = Get.find<ShiftController>();
+
+    return Obx(() {
+      final shift = shiftController.currentShift.value;
+      if (shift == null) {
+        return ElevatedButton.icon(
+          onPressed: () => OpenShiftDialog.show(context, shiftController),
+          icon: const Icon(Icons.lock_open_rounded, size: 13, color: Colors.white),
+          label: const Text('Open Shift', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.white)),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: AppColors.primary,
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            minimumSize: Size.zero,
+            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+          ),
+        );
+      }
+
+      return InkWell(
+        onTap: () => CloseShiftDialog.show(context, shiftController),
+        borderRadius: BorderRadius.circular(14),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+          decoration: BoxDecoration(
+            color: Colors.green.withValues(alpha: 0.12),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: Colors.green.withValues(alpha: 0.5)),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.point_of_sale_rounded, size: 14, color: Colors.green),
+              const SizedBox(width: 4),
+              Text(
+                'Shift: Rs ${shift.expectedCash.toStringAsFixed(0)}',
+                style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.green),
+              ),
+              const SizedBox(width: 4),
+              const Icon(Icons.keyboard_arrow_down, size: 14, color: Colors.green),
+            ],
+          ),
+        ),
+      );
+    });
   }
 }
 
