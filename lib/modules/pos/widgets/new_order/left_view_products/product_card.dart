@@ -4,6 +4,7 @@ import 'package:foodiepos/app/theme/app_colors.dart';
 import 'package:foodiepos/app/widgets/custom_text_widget.dart';
 import 'package:foodiepos/modules/pos/controllers/pos_controller.dart';
 import 'package:foodiepos/modules/pos/model/product_model.dart';
+import 'package:foodiepos/modules/pos/widgets/new_order/dialogs/product_customization_dialog.dart';
 import 'package:get/get.dart';
 
 class ProductCard extends StatelessWidget {
@@ -22,7 +23,7 @@ class ProductCard extends StatelessWidget {
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        onTap: () => posController?.addToCart(product),
+        onTap: () => ProductCustomizationDialog.show(context, product),
         borderRadius: BorderRadius.circular(12),
         child: Container(
           padding: const EdgeInsets.all(10),
@@ -73,13 +74,13 @@ class ProductCard extends StatelessWidget {
 
               const SizedBox(height: 6),
 
-              // PRICE & ADD BUTTON
+              // PRICE & DIRECT ADD/STEPPER CONTROLS
               Row(
                 children: [
                   Expanded(
                     child: CustomTextWidget(
                       'Rs ${product.price.toStringAsFixed(0)}',
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontWeight: FontWeight.w800,
                         fontSize: 14,
                         color: AppColors.primary,
@@ -87,29 +88,120 @@ class ProductCard extends StatelessWidget {
                     ),
                   ),
 
-                  SizedBox(
-                    height: 32,
-                    child: ElevatedButton(
-                      onPressed: () => posController?.addToCart(product),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary,
-                        foregroundColor: Colors.white,
-                        elevation: 0,
-                        padding: const EdgeInsets.symmetric(horizontal: 12),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
+                  if (posController != null)
+                    Obx(() {
+                      final inCartCount =
+                          posController.getProductCartQuantity(product.id);
+
+                      if (inCartCount > 0) {
+                        return Container(
+                          height: 32,
+                          decoration: BoxDecoration(
+                            color: AppColors.primary,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              InkWell(
+                                onTap: () =>
+                                    posController.quickDecrementProduct(product),
+                                borderRadius: const BorderRadius.horizontal(
+                                  left: Radius.circular(8),
+                                ),
+                                child: const Padding(
+                                  padding: EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 6,
+                                  ),
+                                  child: Icon(
+                                    Icons.remove,
+                                    size: 14,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ),
+                              Text(
+                                '$inCartCount',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 12,
+                                ),
+                              ),
+                              InkWell(
+                                onTap: () =>
+                                    posController.quickIncrementProduct(product),
+                                borderRadius: const BorderRadius.horizontal(
+                                  right: Radius.circular(8),
+                                ),
+                                child: const Padding(
+                                  padding: EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 6,
+                                  ),
+                                  child: Icon(
+                                    Icons.add,
+                                    size: 14,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      }
+
+                      return SizedBox(
+                        height: 32,
+                        child: ElevatedButton(
+                          onPressed: () =>
+                              posController.quickIncrementProduct(product),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.primary,
+                            foregroundColor: Colors.white,
+                            elevation: 0,
+                            padding: const EdgeInsets.symmetric(horizontal: 12),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                          child: const CustomTextWidget(
+                            '+ Add',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                              color: Colors.white,
+                            ),
+                          ),
                         ),
-                      ),
-                      child: const CustomTextWidget(
-                        '+ Add',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w700,
-                          color: Colors.white,
+                      );
+                    })
+                  else
+                    SizedBox(
+                      height: 32,
+                      child: ElevatedButton(
+                        onPressed: () =>
+                            ProductCustomizationDialog.show(context, product),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primary,
+                          foregroundColor: Colors.white,
+                          elevation: 0,
+                          padding: const EdgeInsets.symmetric(horizontal: 12),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                        child: const CustomTextWidget(
+                          '+ Add',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.white,
+                          ),
                         ),
                       ),
                     ),
-                  ),
                 ],
               ),
             ],

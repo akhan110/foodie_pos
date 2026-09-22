@@ -145,26 +145,60 @@ class PosController extends GetxController {
   // CART OPERATIONS
   // ===========================================================================
 
+  int getProductCartQuantity(String productId) {
+    return cartItems
+        .where((item) => item.product.id == productId)
+        .fold(0, (sum, item) => sum + item.quantity);
+  }
+
   void addToCart(ProductModel product) {
+    final defaultItem = CartItemModel(product: product, quantity: 1);
+    final index = cartItems.indexWhere((item) => item.id == defaultItem.id);
+    if (index >= 0) {
+      cartItems[index].quantity += 1;
+      cartItems.refresh();
+    } else {
+      cartItems.add(defaultItem);
+    }
+  }
+
+  void addCustomizedItemToCart({
+    required ProductModel product,
+    required ProductSizeOption size,
+    required List<ProductExtraItem> extras,
+    int quantity = 1,
+    String? notes,
+  }) {
+    final newItem = CartItemModel(
+      product: product,
+      size: size,
+      extras: extras,
+      quantity: quantity,
+      notes: notes,
+    );
+
+    final index = cartItems.indexWhere((item) => item.id == newItem.id);
+    if (index >= 0) {
+      cartItems[index].quantity += quantity;
+      cartItems.refresh();
+    } else {
+      cartItems.add(newItem);
+    }
+  }
+
+  void quickIncrementProduct(ProductModel product) {
+    // Increment the first matching cart item or add a regular default item
     final index = cartItems.indexWhere((item) => item.product.id == product.id);
     if (index >= 0) {
       cartItems[index].quantity += 1;
       cartItems.refresh();
     } else {
-      cartItems.add(CartItemModel(product: product, quantity: 1));
+      addToCart(product);
     }
   }
 
-  void incrementQuantity(String productId) {
-    final index = cartItems.indexWhere((item) => item.product.id == productId);
-    if (index >= 0) {
-      cartItems[index].quantity += 1;
-      cartItems.refresh();
-    }
-  }
-
-  void decrementQuantity(String productId) {
-    final index = cartItems.indexWhere((item) => item.product.id == productId);
+  void quickDecrementProduct(ProductModel product) {
+    final index = cartItems.lastIndexWhere((item) => item.product.id == product.id);
     if (index >= 0) {
       if (cartItems[index].quantity > 1) {
         cartItems[index].quantity -= 1;
@@ -175,8 +209,31 @@ class PosController extends GetxController {
     }
   }
 
-  void removeFromCart(String productId) {
-    cartItems.removeWhere((item) => item.product.id == productId);
+  void incrementCartItem(String cartItemId) {
+    final index = cartItems.indexWhere((item) => item.id == cartItemId || item.product.id == cartItemId);
+    if (index >= 0) {
+      cartItems[index].quantity += 1;
+      cartItems.refresh();
+    }
+  }
+
+  void decrementCartItem(String cartItemId) {
+    final index = cartItems.indexWhere((item) => item.id == cartItemId || item.product.id == cartItemId);
+    if (index >= 0) {
+      if (cartItems[index].quantity > 1) {
+        cartItems[index].quantity -= 1;
+        cartItems.refresh();
+      } else {
+        cartItems.removeAt(index);
+      }
+    }
+  }
+
+  void incrementQuantity(String id) => incrementCartItem(id);
+  void decrementQuantity(String id) => decrementCartItem(id);
+
+  void removeFromCart(String id) {
+    cartItems.removeWhere((item) => item.id == id || item.product.id == id);
   }
 
   void clearCart() {

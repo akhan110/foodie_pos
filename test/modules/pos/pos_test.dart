@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:foodiepos/models/base_response_model.dart';
 import 'package:foodiepos/modules/pos/controllers/pos_controller.dart';
+import 'package:foodiepos/modules/pos/model/cart_model.dart';
 import 'package:foodiepos/modules/pos/model/product_category.dart';
 import 'package:foodiepos/modules/pos/model/product_model.dart';
 import 'package:foodiepos/modules/pos/repository/pos_repository.dart';
@@ -82,7 +83,7 @@ class MockPosRepository implements IPosRepository {
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  group('PosController & Products API Tests', () {
+  group('PosController & Products Customization & Cart Tests', () {
     late MockPosRepository mockRepo;
     late PosController controller;
 
@@ -141,6 +142,53 @@ void main() {
 
       // Clear
       controller.clearCart();
+      expect(controller.cartItems.isEmpty, isTrue);
+    });
+
+    test('4. Customized Item with Size and Extras computation', () async {
+      await controller.loadMenuData();
+
+      final burger = controller.allProducts.first; // 620
+
+      // Add customized: Large (+120), Extra cheese (+90), qty 2
+      controller.addCustomizedItemToCart(
+        product: burger,
+        size: const ProductSizeOption(id: 'large', name: 'Large', extraPrice: 120),
+        extras: const [
+          ProductExtraItem(id: 'cheese', name: 'Extra cheese', price: 90),
+        ],
+        quantity: 2,
+      );
+
+      expect(controller.cartItems.length, 1);
+      final item = controller.cartItems.first;
+      // unitPrice = 620 + 120 + 90 = 830. Subtotal = 830 * 2 = 1660
+      expect(item.unitPrice, 830.0);
+      expect(item.subtotal, 1660.0);
+      expect(item.subtitle, 'Large · Extra cheese');
+      expect(controller.subtotal, 1660.0);
+    });
+
+    test('5. Direct Card Stepper controls and getProductCartQuantity', () async {
+      await controller.loadMenuData();
+
+      final burger = controller.allProducts.first;
+
+      expect(controller.getProductCartQuantity(burger.id), 0);
+
+      // Quick Increment from product card button
+      controller.quickIncrementProduct(burger);
+      expect(controller.getProductCartQuantity(burger.id), 1);
+
+      controller.quickIncrementProduct(burger);
+      expect(controller.getProductCartQuantity(burger.id), 2);
+
+      // Quick Decrement from product card button
+      controller.quickDecrementProduct(burger);
+      expect(controller.getProductCartQuantity(burger.id), 1);
+
+      controller.quickDecrementProduct(burger);
+      expect(controller.getProductCartQuantity(burger.id), 0);
       expect(controller.cartItems.isEmpty, isTrue);
     });
   });

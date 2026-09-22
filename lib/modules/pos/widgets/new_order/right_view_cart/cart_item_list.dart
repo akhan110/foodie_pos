@@ -55,13 +55,13 @@ class CartItemList extends GetView<PosController> {
           final cartItem = items[index];
           return CartItemTile(
             name: cartItem.product.name,
-            subtitle: cartItem.product.category.name.capitalizeFirst ?? 'Regular',
+            subtitle: cartItem.subtitle,
             price: cartItem.subtotal,
             quantity: cartItem.quantity,
             image: cartItem.product.image,
-            onRemove: () => controller.removeFromCart(cartItem.product.id),
-            onIncrease: () => controller.incrementQuantity(cartItem.product.id),
-            onDecrease: () => controller.decrementQuantity(cartItem.product.id),
+            onRemove: () => controller.removeFromCart(cartItem.id),
+            onIncrease: () => controller.incrementCartItem(cartItem.id),
+            onDecrease: () => controller.decrementCartItem(cartItem.id),
           );
         },
       );
