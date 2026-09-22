@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:foodiepos/app/constants/storage_keys.dart';
 import 'package:foodiepos/app/utils/app_loader.dart';
 import 'package:foodiepos/data/data/dummy/dummy_model_data.dart';
+import 'package:foodiepos/modules/deals/models/deal_model.dart';
 import 'package:foodiepos/modules/orders/controllers/orders_controller.dart';
 import 'package:foodiepos/modules/pos/model/cart_model.dart';
 import 'package:foodiepos/modules/pos/model/parked_order_model.dart';
@@ -22,6 +23,11 @@ class PosController extends GetxController {
   final RxList<ProductCategoryModel> categories = <ProductCategoryModel>[].obs;
   final RxList<ProductModel> allProducts = <ProductModel>[].obs;
   final RxList<ProductModel> filteredProducts = <ProductModel>[].obs;
+
+  // Deals State
+  final RxList<DealModel> allDeals = <DealModel>[].obs;
+  final RxList<DealModel> filteredDeals = <DealModel>[].obs;
+  final RxBool isLoadingDeals = false.obs;
 
   final RxString selectedCategory = 'all'.obs;
   final RxString selectedTopFilter = 'all'.obs; // 'all', 'popular', 'combos'
@@ -64,6 +70,7 @@ class PosController extends GetxController {
     await Future.wait([
       fetchCategories(),
       fetchProducts(),
+      fetchDeals(),
     ]);
   }
 
@@ -71,18 +78,26 @@ class PosController extends GetxController {
     try {
       isLoadingCategories.value = true;
       final response = await _posRepository.getCategories();
+      List<ProductCategoryModel> list = [];
       if (response.success && response.data != null && response.data!.isNotEmpty) {
-        categories.assignAll(response.data!);
+        list = List.from(response.data!);
       } else {
-        categories.assignAll([
+        list = [
           ProductCategoryModel(id: 'burgers', name: 'Burgers', slug: 'burgers'),
           ProductCategoryModel(id: 'chicken', name: 'Chicken', slug: 'chicken'),
           ProductCategoryModel(id: 'pizza', name: 'Pizza', slug: 'pizza'),
           ProductCategoryModel(id: 'sides', name: 'Sides', slug: 'sides'),
           ProductCategoryModel(id: 'drinks', name: 'Drinks', slug: 'drinks'),
           ProductCategoryModel(id: 'desserts', name: 'Desserts', slug: 'desserts'),
-        ]);
+        ];
       }
+
+      // Ensure Deals category exists in the list
+      if (!list.any((c) => c.name.toLowerCase() == 'deals' || c.id.toLowerCase() == 'deals')) {
+        list.add(ProductCategoryModel(id: 'deals', name: 'Deals', slug: 'deals'));
+      }
+
+      categories.assignAll(list);
     } catch (e) {
       debugPrint('Error fetching categories: $e');
       categories.assignAll([
@@ -92,10 +107,128 @@ class PosController extends GetxController {
         ProductCategoryModel(id: 'sides', name: 'Sides', slug: 'sides'),
         ProductCategoryModel(id: 'drinks', name: 'Drinks', slug: 'drinks'),
         ProductCategoryModel(id: 'desserts', name: 'Desserts', slug: 'desserts'),
+        ProductCategoryModel(id: 'deals', name: 'Deals', slug: 'deals'),
       ]);
     } finally {
       isLoadingCategories.value = false;
     }
+  }
+
+  Future<void> fetchDeals() async {
+    try {
+      isLoadingDeals.value = true;
+      final response = await _posRepository.getDeals(activeOnly: true);
+      if (response.success && response.data != null && response.data!.isNotEmpty) {
+        allDeals.assignAll(response.data!);
+      } else {
+        allDeals.assignAll(_getDefaultDeals());
+      }
+      _applyFilters();
+    } catch (e) {
+      debugPrint('Error fetching deals: $e');
+      allDeals.assignAll(_getDefaultDeals());
+      _applyFilters();
+    } finally {
+      isLoadingDeals.value = false;
+    }
+  }
+
+  List<DealModel> _getDefaultDeals() {
+    return [
+      DealModel(
+        id: 'deal-1',
+        name: 'Burger Combo',
+        description: 'Classic burger + Fries + Drink',
+        category: 'Meal Combos',
+        price: 799.0,
+        originalPrice: 1060.0,
+        discountAmount: 261.0,
+        image: 'assets/svg/products/burger.svg',
+        isActive: true,
+        items: [
+          DealItemModel(id: 'd1-1', productName: 'Classic Smash Burger', unitPrice: 620, totalPrice: 620, quantity: 1, productImage: 'assets/svg/products/burger.svg'),
+          DealItemModel(id: 'd1-2', productName: 'Sea Salt Fries', unitPrice: 260, totalPrice: 260, quantity: 1, productImage: 'assets/svg/products/fries.svg'),
+          DealItemModel(id: 'd1-3', productName: 'Cola', unitPrice: 180, totalPrice: 180, quantity: 1, productImage: 'assets/svg/products/drink.svg'),
+        ],
+      ),
+      DealModel(
+        id: 'deal-2',
+        name: 'Pizza Family Deal',
+        description: '2 Large Pizzas + 4 Drinks',
+        category: 'Family Deals',
+        price: 2999.0,
+        originalPrice: 3600.0,
+        discountAmount: 601.0,
+        image: 'assets/svg/products/pizza.svg',
+        isActive: true,
+        items: [
+          DealItemModel(id: 'd2-1', productName: 'Pepperoni Pizza', unitPrice: 890, totalPrice: 1780, quantity: 2, productImage: 'assets/svg/products/pizza.svg'),
+          DealItemModel(id: 'd2-2', productName: 'Cola', unitPrice: 180, totalPrice: 720, quantity: 4, productImage: 'assets/svg/products/drink.svg'),
+        ],
+      ),
+      DealModel(
+        id: 'deal-3',
+        name: 'Chicken Meal',
+        description: 'Chicken + Fries + Drink',
+        category: 'Meal Combos',
+        price: 850.0,
+        originalPrice: 1120.0,
+        discountAmount: 270.0,
+        image: 'assets/svg/products/chicken.svg',
+        isActive: true,
+        items: [
+          DealItemModel(id: 'd3-1', productName: 'Crunch Chicken', unitPrice: 740, totalPrice: 740, quantity: 1, productImage: 'assets/svg/products/chicken.svg'),
+          DealItemModel(id: 'd3-2', productName: 'Sea Salt Fries', unitPrice: 260, totalPrice: 260, quantity: 1, productImage: 'assets/svg/products/fries.svg'),
+          DealItemModel(id: 'd3-3', productName: 'Cola', unitPrice: 180, totalPrice: 180, quantity: 1, productImage: 'assets/svg/products/drink.svg'),
+        ],
+      ),
+      DealModel(
+        id: 'deal-4',
+        name: 'Kids Special',
+        description: 'Kids burger + Fries + Juice',
+        category: 'Meal Combos',
+        price: 499.0,
+        originalPrice: 680.0,
+        discountAmount: 181.0,
+        image: 'assets/svg/products/burger.svg',
+        isActive: true,
+        items: [
+          DealItemModel(id: 'd4-1', productName: 'Kids Burger', unitPrice: 320, totalPrice: 320, quantity: 1, productImage: 'assets/svg/products/burger.svg'),
+          DealItemModel(id: 'd4-2', productName: 'Sea Salt Fries', unitPrice: 260, totalPrice: 260, quantity: 1, productImage: 'assets/svg/products/fries.svg'),
+        ],
+      ),
+      DealModel(
+        id: 'deal-5',
+        name: 'Couple Deal',
+        description: '2 Burgers + 2 Fries + 2 Drinks',
+        category: 'Family Deals',
+        price: 1299.0,
+        originalPrice: 1550.0,
+        discountAmount: 251.0,
+        image: 'assets/svg/products/burger.svg',
+        isActive: true,
+        items: [
+          DealItemModel(id: 'd5-1', productName: 'Classic Smash Burger', unitPrice: 620, totalPrice: 1240, quantity: 2, productImage: 'assets/svg/products/burger.svg'),
+          DealItemModel(id: 'd5-2', productName: 'Sea Salt Fries', unitPrice: 260, totalPrice: 520, quantity: 2, productImage: 'assets/svg/products/fries.svg'),
+          DealItemModel(id: 'd5-3', productName: 'Cola', unitPrice: 180, totalPrice: 360, quantity: 2, productImage: 'assets/svg/products/drink.svg'),
+        ],
+      ),
+      DealModel(
+        id: 'deal-6',
+        name: 'Dessert Deal',
+        description: 'Any 2 Sundaes + 2 Drinks',
+        category: 'Limited Time',
+        price: 399.0,
+        originalPrice: 640.0,
+        discountAmount: 241.0,
+        image: 'assets/svg/products/dessert.svg',
+        isActive: true,
+        items: [
+          DealItemModel(id: 'd6-1', productName: 'Chocolate Sundae', unitPrice: 320, totalPrice: 640, quantity: 2, productImage: 'assets/svg/products/dessert.svg'),
+          DealItemModel(id: 'd6-2', productName: 'Cola', unitPrice: 180, totalPrice: 360, quantity: 2, productImage: 'assets/svg/products/drink.svg'),
+        ],
+      ),
+    ];
   }
 
   Future<void> fetchProducts({String? categoryId}) async {
@@ -136,16 +269,17 @@ class PosController extends GetxController {
   }
 
   void _applyFilters() {
-    List<ProductModel> list = List.from(allProducts);
+    // 1. Filter Products
+    List<ProductModel> productList = List.from(allProducts);
 
     if (selectedTopFilter.value == 'popular') {
-      list = list.where((p) => p.isPopular).toList();
+      productList = productList.where((p) => p.isPopular).toList();
     } else if (selectedTopFilter.value == 'combos') {
-      list = list.where((p) => p.isCombo).toList();
+      productList = productList.where((p) => p.isCombo).toList();
     }
 
-    if (selectedCategory.value != 'all') {
-      list = list.where((p) {
+    if (selectedCategory.value != 'all' && selectedCategory.value != 'deals') {
+      productList = productList.where((p) {
         final catName = p.category.name.toLowerCase();
         return catName == selectedCategory.value.toLowerCase() ||
             p.id == selectedCategory.value;
@@ -153,12 +287,39 @@ class PosController extends GetxController {
     }
 
     if (searchQuery.value.isNotEmpty) {
-      list = list.where((p) {
+      productList = productList.where((p) {
         return p.name.toLowerCase().contains(searchQuery.value);
       }).toList();
     }
 
-    filteredProducts.assignAll(list);
+    filteredProducts.assignAll(productList);
+
+    // 2. Filter Deals
+    List<DealModel> dealList = allDeals.where((d) => d.isActive).toList();
+    if (searchQuery.value.isNotEmpty) {
+      dealList = dealList.where((d) {
+        final nameMatch = d.name.toLowerCase().contains(searchQuery.value);
+        final descMatch = (d.description ?? '').toLowerCase().contains(searchQuery.value);
+        return nameMatch || descMatch;
+      }).toList();
+    }
+    filteredDeals.assignAll(dealList);
+  }
+
+  void addDealToCart(DealModel deal) {
+    final dealProduct = ProductModel(
+      id: 'deal-${deal.id}',
+      name: deal.name,
+      description: deal.description ??
+          deal.items.map((i) => '${i.quantity > 1 ? "${i.quantity}x " : ""}${i.productName}').join(' + '),
+      price: deal.price,
+      category: ProductCategory.deals,
+      image: deal.image,
+      isPopular: true,
+      isCombo: true,
+      isActive: true,
+    );
+    addToCart(dealProduct);
   }
 
   // ===========================================================================

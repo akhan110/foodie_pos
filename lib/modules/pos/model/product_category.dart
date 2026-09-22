@@ -1,4 +1,4 @@
-enum ProductCategory { burgers, chicken, pizza, sides, drinks, desserts }
+enum ProductCategory { burgers, chicken, pizza, sides, drinks, desserts, deals }
 
 class ProductCategoryModel {
   final String id;

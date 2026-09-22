@@ -45,14 +45,16 @@ class NewOrderHeader extends GetView<PosController> {
 
             // SEARCH BAR
             Container(
-              width: 220,
+              width: 240,
               height: 40,
               decoration: BoxDecoration(
                 color: isDark ? const Color(0xFF1B202B) : const Color(0xFFF3F4F6),
                 borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: theme.dividerColor),
+                border: Border.all(
+                  color: isDark ? Colors.white.withValues(alpha: 0.1) : const Color(0xFFE5E7EB),
+                ),
               ),
-              padding: const EdgeInsets.symmetric(horizontal: 10),
+              padding: const EdgeInsets.symmetric(horizontal: 12),
               child: Row(
                 children: [
                   Icon(Icons.search_rounded, size: 18, color: colors.onSurfaceVariant),
@@ -62,9 +64,9 @@ class NewOrderHeader extends GetView<PosController> {
                       onChanged: controller.onSearchChanged,
                       style: TextStyle(fontSize: 13, color: colors.onSurface),
                       decoration: InputDecoration(
-                        hintText: 'Search products...',
+                        hintText: 'Search menu items...',
                         hintStyle: TextStyle(
-                          fontSize: 12,
+                          fontSize: 12.5,
                           color: colors.onSurfaceVariant.withValues(alpha: 0.7),
                         ),
                         border: InputBorder.none,
@@ -76,49 +78,14 @@ class NewOrderHeader extends GetView<PosController> {
                 ],
               ),
             ),
-
-            const SizedBox(width: 12),
-
-            // TOP FILTER CHIPS (All / Popular / Combos)
-            const _TopFilterChips(),
           ],
         ),
 
-        const SizedBox(height: 14),
+        const SizedBox(height: 16),
 
         // CATEGORY CHIPS
         const _CategoryChips(),
       ],
-    );
-  }
-}
-
-class _TopFilterChips extends GetView<PosController> {
-  const _TopFilterChips();
-
-  @override
-  Widget build(BuildContext context) {
-    return Obx(
-      () => Wrap(
-        spacing: 8,
-        children: [
-          _FilterChipItem(
-            label: 'All',
-            isSelected: controller.selectedTopFilter.value == 'all',
-            onTap: () => controller.selectTopFilter('all'),
-          ),
-          _FilterChipItem(
-            label: 'Popular',
-            isSelected: controller.selectedTopFilter.value == 'popular',
-            onTap: () => controller.selectTopFilter('popular'),
-          ),
-          _FilterChipItem(
-            label: 'Combos',
-            isSelected: controller.selectedTopFilter.value == 'combos',
-            onTap: () => controller.selectTopFilter('combos'),
-          ),
-        ],
-      ),
     );
   }
 }
@@ -129,26 +96,27 @@ class _CategoryChips extends GetView<PosController> {
   @override
   Widget build(BuildContext context) {
     return Obx(() {
-      final selected = controller.selectedCategory.value;
+      final selected = controller.selectedCategory.value.toLowerCase();
 
       return SingleChildScrollView(
         scrollDirection: Axis.horizontal,
         child: Row(
           children: [
             _FilterChipItem(
-              label: 'All Items',
+              label: 'All',
               isSelected: selected == 'all',
               onTap: () => controller.selectCategory('all'),
             ),
             const SizedBox(width: 8),
             ...controller.categories.map((cat) {
-              final isSelected = selected == cat.id || selected == cat.name.toLowerCase();
+              final catId = cat.id.toLowerCase();
+              final isSelected = selected == catId || selected == cat.name.toLowerCase();
               return Padding(
                 padding: const EdgeInsets.only(right: 8),
                 child: _FilterChipItem(
                   label: cat.name,
                   isSelected: isSelected,
-                  onTap: () => controller.selectCategory(cat.id),
+                  onTap: () => controller.selectCategory(catId),
                 ),
               );
             }),

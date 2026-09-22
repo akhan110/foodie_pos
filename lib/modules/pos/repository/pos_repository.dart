@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart' as dio;
 import 'package:foodiepos/models/base_response_model.dart';
+import 'package:foodiepos/modules/deals/models/deal_model.dart';
 import 'package:foodiepos/modules/pos/model/cart_model.dart';
 import 'package:foodiepos/modules/pos/model/product_category.dart';
 import 'package:foodiepos/modules/pos/model/product_model.dart';
@@ -26,6 +27,7 @@ abstract class IPosRepository {
   Future<BaseResponseModel<dynamic>> deleteSizeOption(String id);
   Future<BaseResponseModel<String>> uploadImage(String filePath, {List<int>? bytes, String? filename});
   Future<BaseResponseModel<Map<String, dynamic>>> createOrder(Map<String, dynamic> orderPayload);
+  Future<BaseResponseModel<List<DealModel>>> getDeals({bool activeOnly = true});
 }
 
 class PosRepository implements IPosRepository {
@@ -288,6 +290,24 @@ class PosRepository implements IPosRepository {
       requestData: orderPayload,
       isBearerRequired: true,
       parser: (data) => data is Map<String, dynamic> ? data : {},
+    );
+  }
+
+  @override
+  Future<BaseResponseModel<List<DealModel>>> getDeals({bool activeOnly = true}) async {
+    return await _network.apiRequest<List<DealModel>>(
+      requestType: ApiRequestType.get,
+      endPoint: '/api/v1/deals',
+      queryParameters: activeOnly ? {'status': 'active'} : null,
+      isBearerRequired: true,
+      parser: (data) {
+        if (data is List) {
+          return data
+              .map((item) => DealModel.fromJson(item as Map<String, dynamic>))
+              .toList();
+        }
+        return [];
+      },
     );
   }
 }

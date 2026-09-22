@@ -2,6 +2,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:foodiepos/models/base_response_model.dart';
 import 'package:foodiepos/modules/dashboard/controllers/dashboard_controller.dart';
+import 'package:foodiepos/modules/deals/models/deal_model.dart';
 import 'package:foodiepos/modules/menu/controllers/menu_management_controller.dart';
 import 'package:foodiepos/modules/pos/controllers/pos_controller.dart';
 import 'package:foodiepos/modules/pos/model/cart_model.dart';
@@ -219,6 +220,28 @@ class MockPosRepository implements IPosRepository {
       data: {'order_id': 'ord-1234'},
     );
   }
+
+  @override
+  Future<BaseResponseModel<List<DealModel>>> getDeals({bool activeOnly = true}) async {
+    return BaseResponseModel(
+      success: true,
+      message: 'Deals retrieved',
+      statusCode: 200,
+      data: [
+        DealModel(
+          id: 'deal-1',
+          name: 'Burger Combo',
+          description: 'Burger + Fries + Drink',
+          category: 'Meal Combos',
+          price: 799.0,
+          originalPrice: 1060.0,
+          discountAmount: 261.0,
+          image: 'assets/svg/products/burger.svg',
+          isActive: true,
+        ),
+      ],
+    );
+  }
 }
 
 void main() {
@@ -246,7 +269,7 @@ void main() {
     test('1. Loads categories and products on init', () async {
       await controller.loadMenuData();
 
-      expect(controller.categories.length, 3);
+      expect(controller.categories.length, 4);
       expect(controller.allProducts.length, 3);
       expect(controller.filteredProducts.length, 3);
     });
@@ -519,6 +542,54 @@ void main() {
     test('2. Updates selected time range', () {
       dashController.setTimeRange('This Week');
       expect(dashController.selectedTimeRange.value, 'This Week');
+    });
+  });
+
+  group('PosController Deals Integration Tests', () {
+    late PosController posController;
+    late MockPosRepository mockRepo;
+
+    setUp(() {
+      Get.testMode = true;
+      mockRepo = MockPosRepository();
+      posController = PosController(posRepository: mockRepo);
+    });
+
+    test('1. Loads deals and includes deals category', () async {
+      await posController.loadMenuData();
+
+      expect(posController.categories.any((c) => c.slug == 'deals'), isTrue);
+      expect(posController.allDeals.isNotEmpty, isTrue);
+      expect(posController.allDeals.first.name, 'Burger Combo');
+    });
+
+    test('2. Adds deal to cart seamlessly', () async {
+      await posController.loadMenuData();
+
+      final deal = posController.allDeals.first;
+      posController.addDealToCart(deal);
+
+      expect(posController.cartItems.length, 1);
+      expect(posController.cartItems.first.product.name, 'Burger Combo');
+      expect(posController.cartItems.first.product.price, 799.0);
+      expect(posController.cartItems.first.product.isCombo, isTrue);
+      expect(posController.getProductCartQuantity('deal-${deal.id}'), 1);
+    });
+
+    test('3. Filters deals when deals category is selected', () async {
+      await posController.loadMenuData();
+      posController.selectCategory('deals');
+
+      expect(posController.selectedCategory.value, 'deals');
+      expect(posController.filteredDeals.isNotEmpty, isTrue);
+
+      // Search matching
+      posController.onSearchChanged('burger');
+      expect(posController.filteredDeals.length, 1);
+
+      // Search non-matching
+      posController.onSearchChanged('nonexistent');
+      expect(posController.filteredDeals.isEmpty, isTrue);
     });
   });
 }
