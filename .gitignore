@@ -18,6 +18,8 @@ __pycache__/
 venv/
 .venv/
 env/
+GetStorage.*
+*.gs
 
 
 # IntelliJ related

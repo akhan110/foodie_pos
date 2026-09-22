@@ -14,18 +14,19 @@ class EmailLoginRequest(BaseModel):
 
 class SignUpRequest(BaseModel):
     name: str
-    pin: str
-    email: Optional[str] = None
-    password: Optional[str] = None
-    role: Optional[str] = "cashier"
-    store_name: Optional[str] = "Store #01"
-
+    store_name: str
+    email: str
+    phone: Optional[str] = None
+    password: str
+    pin: Optional[str] = "1234"
+    role: Optional[str] = "manager"
 
 
 class CashierResponse(BaseModel):
     id: UUID
     name: str
     email: Optional[str] = None
+    phone: Optional[str] = None
     role: str
     store_name: str
     is_active: bool

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:foodiepos/app/routes/app_routes.dart';
 import 'package:foodiepos/app/theme/app_colors.dart';
 import 'package:foodiepos/app/widgets/custom_text_widget.dart';
 import 'package:foodiepos/modules/shell/controllers/connectivity_controller.dart';
@@ -287,7 +288,35 @@ class LoginView extends GetView<LoginController> {
             ),
           ),
 
-          const SizedBox(height: 18),
+          const SizedBox(height: 14),
+
+          // SIGN UP LINK
+          Wrap(
+            alignment: WrapAlignment.center,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              CustomTextWidget(
+                "Don't have an account? ",
+                style: TextStyle(
+                  fontSize: 13,
+                  color: colors.onSurfaceVariant,
+                ),
+              ),
+              InkWell(
+                onTap: () => Get.toNamed(AppRoutes.signup),
+                child: const CustomTextWidget(
+                  'Sign up',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.primary,
+                  ),
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 16),
 
           CustomTextWidget(
             'BiteFlow POS v1.0 · Store #01',

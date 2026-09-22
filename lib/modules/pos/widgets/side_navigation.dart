@@ -77,6 +77,13 @@ class SideNavigation extends GetView<MainShellController> {
                 isSelected: controller.selectedIndex == 6,
                 onTap: () => controller.changePage(6),
               ),
+
+              const Spacer(),
+
+              // BOTTOM LOGOUT BUTTON
+              _LogoutNavItem(
+                onTap: () => controller.confirmLogout(context),
+              ),
             ],
           );
         },
@@ -132,6 +139,54 @@ class _SideNavItem extends StatelessWidget {
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _LogoutNavItem extends StatelessWidget {
+  const _LogoutNavItem({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      borderRadius: BorderRadius.circular(10),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(10),
+        hoverColor: AppColors.error.withValues(alpha: 0.12),
+        splashColor: AppColors.error.withValues(alpha: 0.2),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(
+              color: AppColors.error.withValues(alpha: 0.2),
+              width: 1,
+            ),
+          ),
+          child: const Row(
+            children: [
+              Icon(
+                Icons.logout_rounded,
+                size: 20,
+                color: AppColors.error,
+              ),
+              SizedBox(width: 10),
+              Text(
+                'Logout',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.error,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

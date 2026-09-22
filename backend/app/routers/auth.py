@@ -58,13 +58,13 @@ def pin_login(payload: PinLoginRequest, db: Session = Depends(get_db)):
 @router.post("/signup")
 def signup(payload: SignUpRequest, db: Session = Depends(get_db)):
     """Create a new cashier or manager account."""
-    if payload.email:
-        existing = db.query(Cashier).filter(Cashier.email == payload.email).first()
-        if existing:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="A user with this email already exists.",
-            )
+    email_clean = payload.email.strip().lower()
+    existing = db.query(Cashier).filter(Cashier.email == email_clean).first()
+    if existing:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="An account with this email already exists.",
+        )
 
     password_hash = (
         get_password_hash(payload.password) if payload.password else None
@@ -72,11 +72,12 @@ def signup(payload: SignUpRequest, db: Session = Depends(get_db)):
 
     new_cashier = Cashier(
         name=payload.name.strip(),
-        email=str(payload.email) if payload.email else None,
+        email=email_clean,
         password_hash=password_hash,
-        pin=payload.pin.strip(),
-        role=payload.role or "cashier",
-        store_name=payload.store_name or "Store #01",
+        phone=payload.phone.strip() if payload.phone else None,
+        pin=(payload.pin or "1234").strip(),
+        role=payload.role or "manager",
+        store_name=payload.store_name.strip() or "BiteFlow Store #01",
         is_active=True,
     )
 
@@ -96,7 +97,7 @@ def signup(payload: SignUpRequest, db: Session = Depends(get_db)):
 
     return {
         "success": True,
-        "message": "Account created successfully.",
+        "message": f"Welcome to BiteFlow POS, {new_cashier.name}!",
         "data": {
             "access_token": access_token,
             "token_type": "bearer",
@@ -149,3 +150,15 @@ def get_me(current_user: Cashier = Depends(get_current_user)):
         "data": user_data,
         "statusCode": 200,
     }
+
+
+@router.post("/logout")
+def logout(current_user: Cashier = Depends(get_current_user)):
+    """Logout current authenticated cashier."""
+    return {
+        "success": True,
+        "message": f"Cashier {current_user.name} logged out successfully.",
+        "data": None,
+        "statusCode": 200,
+    }
+

@@ -21,6 +21,7 @@ dependencies:
   flutter_svg: ^2.2.3
   get_storage: ^2.1.1
   dio: ^5.8.0+1
+  flutter_easyloading: ^3.0.5
 
 dev_dependencies:
   flutter_test:
@@ -35,4 +36,5 @@ flutter:
   assets:
     - assets/svg/biteflow_logo.svg
     - assets/svg/biteflow_logo_dark.svg
+    - assets/svg/hero_burger.svg
     - assets/svg/products/
