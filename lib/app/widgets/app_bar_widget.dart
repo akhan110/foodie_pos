@@ -1,24 +1,26 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:foodiepos/app/constants/storage_keys.dart';
 import 'package:foodiepos/app/theme/app_colors.dart';
 import 'package:foodiepos/app/theme/theme_controller.dart';
 import 'package:foodiepos/app/widgets/custom_text_widget.dart';
 import 'package:foodiepos/app/widgets/search_widget.dart';
 import 'package:foodiepos/modules/shell/controllers/connectivity_controller.dart';
 import 'package:get/get.dart';
+import 'package:get_storage/get_storage.dart';
 
 class SecondaryAppBar extends StatefulWidget {
   const SecondaryAppBar({
     super.key,
-    this.cashierName = 'Alex Khan',
-    this.cashierRole = 'Cashier',
-    this.storeName = 'Store #01',
+    this.cashierName,
+    this.cashierRole,
+    this.storeName,
     this.onSearchChanged,
   });
 
-  final String cashierName;
-  final String cashierRole;
-  final String storeName;
+  final String? cashierName;
+  final String? cashierRole;
+  final String? storeName;
   final ValueChanged<String>? onSearchChanged;
 
   @override
@@ -41,6 +43,21 @@ class _SecondaryAppBarState extends State<SecondaryAppBar> {
     final ThemeController themeController = Get.find<ThemeController>();
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
+    final storage = GetStorage();
+
+    // Read real cashier and store info dynamically from session storage
+    final String activeCashierName = widget.cashierName ??
+        (storage.read(StorageKeys.cashierName) as String?) ??
+        'Alex Khan';
+
+    final String rawRole = widget.cashierRole ??
+        (storage.read(StorageKeys.cashierRole) as String?) ??
+        'Cashier';
+    final String activeCashierRole = rawRole.capitalizeFirst ?? 'Cashier';
+
+    final String activeStoreName = widget.storeName ??
+        (storage.read(StorageKeys.cashierStore) as String?) ??
+        'Store #01';
 
     return Container(
       height: 60,
@@ -74,7 +91,7 @@ class _SecondaryAppBarState extends State<SecondaryAppBar> {
                 height: 40,
                 constraints: const BoxConstraints(maxWidth: 520),
                 child: SearchWidget(
-                  hintText: "Seach products, orders or customers. . ",
+                  hintText: "Search products, orders or customers. . ",
                   textEditingController: _searchController,
                   onChanged: widget.onSearchChanged,
                 ),
@@ -116,7 +133,7 @@ class _SecondaryAppBarState extends State<SecondaryAppBar> {
               borderRadius: BorderRadius.circular(18),
             ),
             child: CustomTextWidget(
-              widget.storeName,
+              activeStoreName,
               style: TextStyle(
                 fontSize: 11,
                 fontWeight: FontWeight.w700,
@@ -128,7 +145,10 @@ class _SecondaryAppBarState extends State<SecondaryAppBar> {
           const SizedBox(width: 18),
 
           // ---------------- USER ----------------
-          _CashierProfile(name: widget.cashierName, role: widget.cashierRole),
+          _CashierProfile(
+            name: activeCashierName,
+            role: activeCashierRole,
+          ),
         ],
       ),
     );
@@ -172,13 +192,19 @@ class _CashierProfile extends StatelessWidget {
   final String role;
 
   String get initials {
-    final parts = name.trim().split(' ');
+    final clean = name.trim();
+    if (clean.isEmpty) return 'POS';
+    final parts = clean.split(RegExp(r'\s+'));
 
     if (parts.length >= 2) {
       return '${parts[0][0]}${parts[1][0]}'.toUpperCase();
     }
 
-    return name.isNotEmpty ? name[0].toUpperCase() : '';
+    if (clean.length >= 2) {
+      return clean.substring(0, 2).toUpperCase();
+    }
+
+    return clean.toUpperCase();
   }
 
   @override
