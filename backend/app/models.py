@@ -108,5 +108,7 @@ class OrderItem(Base):
     quantity = Column(Integer, nullable=False, default=1)
     unit_price = Column(Numeric(10, 2), nullable=False, default=0.0)
     total_price = Column(Numeric(10, 2), nullable=False, default=0.0)
+    price = Column(Numeric(10, 2), nullable=True)
+    item_total = Column(Numeric(10, 2), nullable=True)
 
     order_rel = relationship("Order", back_populates="items")

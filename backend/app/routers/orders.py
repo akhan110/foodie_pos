@@ -505,6 +505,8 @@ def create_order(payload: OrderCreateRequest, db: Session = Depends(get_db)):
             quantity=it.quantity,
             unit_price=it.unit_price,
             total_price=it.total_price,
+            price=it.unit_price,
+            item_total=it.total_price,
         )
         db.add(order_item)
 
