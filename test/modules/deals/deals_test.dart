@@ -1,6 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:foodiepos/modules/deals/controllers/deals_controller.dart';
-import 'package:foodiepos/modules/deals/models/deal_model.dart';
 import 'package:foodiepos/modules/pos/model/product_category.dart';
 import 'package:foodiepos/modules/pos/model/product_model.dart';
 import 'package:get/get.dart';

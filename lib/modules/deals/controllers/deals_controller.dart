@@ -24,6 +24,8 @@ class DealsController extends GetxController {
   // Form Fields
   final TextEditingController nameController = TextEditingController();
   final TextEditingController priceController = TextEditingController();
+  final RxString previewName = ''.obs;
+  final RxString previewPrice = ''.obs;
   final RxString category = 'Meal Combos'.obs;
   final RxBool isActive = true.obs;
   final RxString imageUrl = 'assets/svg/products/burger.svg'.obs;
@@ -39,6 +41,12 @@ class DealsController extends GetxController {
   @override
   void onInit() {
     super.onInit();
+    nameController.addListener(() {
+      previewName.value = nameController.text;
+    });
+    priceController.addListener(() {
+      previewPrice.value = priceController.text;
+    });
     fetchDeals();
   }
 
@@ -91,7 +99,8 @@ class DealsController extends GetxController {
   }
 
   double get currentDealPrice {
-    final parsed = double.tryParse(priceController.text.trim());
+    final str = previewPrice.value.trim().isNotEmpty ? previewPrice.value.trim() : priceController.text.trim();
+    final parsed = double.tryParse(str);
     return parsed ?? 0.0;
   }
 
@@ -156,7 +165,9 @@ class DealsController extends GetxController {
     isCreatingNew.value = false;
 
     nameController.text = deal.name;
+    previewName.value = deal.name;
     priceController.text = deal.price.toStringAsFixed(0);
+    previewPrice.value = deal.price.toStringAsFixed(0);
     category.value = deal.category;
     isActive.value = deal.isActive;
     imageUrl.value = deal.image;
@@ -171,7 +182,9 @@ class DealsController extends GetxController {
     selectedDeal.value = null;
 
     nameController.text = '';
+    previewName.value = '';
     priceController.text = '';
+    previewPrice.value = '';
     category.value = 'Meal Combos';
     isActive.value = true;
     imageUrl.value = 'assets/svg/products/burger.svg';

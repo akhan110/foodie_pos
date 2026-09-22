@@ -762,7 +762,6 @@ class DealEditorSection extends GetView<DealsController> {
                           fontWeight: FontWeight.w800,
                           color: colors.onSurface,
                         ),
-                        onChanged: (_) => controller.priceController.text = controller.priceController.text,
                       ),
                     ),
                   ],
@@ -873,39 +872,51 @@ class DealEditorSection extends GetView<DealsController> {
                       ),
                       const SizedBox(width: 10),
                       Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Obx(() => Text(
-                                  controller.nameController.text.isNotEmpty
-                                      ? controller.nameController.text
-                                      : 'Burger Combo',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w700,
-                                    color: colors.onSurface,
-                                  ),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                )),
-                            const SizedBox(height: 2),
-                            Obx(() => Text(
-                                  controller.generatedDescription,
-                                  style: TextStyle(fontSize: 10, color: colors.onSurfaceVariant),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                )),
-                            const SizedBox(height: 2),
-                            Obx(() => Text(
-                                  'Rs ${controller.priceController.text.isNotEmpty ? controller.priceController.text : "799"}',
-                                  style: const TextStyle(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w900,
-                                    color: Color(0xFFFF6B35),
-                                  ),
-                                )),
-                          ],
-                        ),
+                        child: Obx(() {
+                          final name = controller.previewName.value.isNotEmpty
+                              ? controller.previewName.value
+                              : (controller.nameController.text.isNotEmpty
+                                  ? controller.nameController.text
+                                  : 'Burger Combo');
+                          final desc = controller.generatedDescription;
+                          final price = controller.previewPrice.value.isNotEmpty
+                              ? controller.previewPrice.value
+                              : (controller.priceController.text.isNotEmpty
+                                  ? controller.priceController.text
+                                  : '799');
+
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                name,
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w700,
+                                  color: colors.onSurface,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                desc,
+                                style: TextStyle(fontSize: 10, color: colors.onSurfaceVariant),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                'Rs $price',
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w900,
+                                  color: Color(0xFFFF6B35),
+                                ),
+                              ),
+                            ],
+                          );
+                        }),
                       ),
                     ],
                   ),

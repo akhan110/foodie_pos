@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:foodiepos/app/widgets/custom_text_widget.dart';
 import 'package:foodiepos/modules/deals/controllers/deals_controller.dart';
 import 'package:foodiepos/modules/deals/widgets/deal_editor_section.dart';
 import 'package:foodiepos/modules/deals/widgets/deals_list_section.dart';
@@ -19,7 +20,9 @@ class DealsView extends GetView<DealsController> {
     final colors = theme.colorScheme;
 
     return Scaffold(
-      backgroundColor: isDark ? const Color(0xFF13171F) : const Color(0xFFF6F8FA),
+      backgroundColor: isDark
+          ? const Color(0xFF13171F)
+          : const Color(0xFFF6F8FA),
       body: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
         child: Column(
@@ -35,7 +38,7 @@ class DealsView extends GetView<DealsController> {
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
+                    CustomTextWidget(
                       'Deals Management',
                       style: TextStyle(
                         fontSize: 22,
@@ -45,7 +48,7 @@ class DealsView extends GetView<DealsController> {
                       ),
                     ),
                     const SizedBox(height: 3),
-                    Text(
+                    CustomTextWidget(
                       'Create and manage combo deals, meal offers and promotions.',
                       style: TextStyle(
                         fontSize: 13,
@@ -59,7 +62,7 @@ class DealsView extends GetView<DealsController> {
                 ElevatedButton.icon(
                   onPressed: () => controller.startNewDeal(),
                   icon: const Icon(Icons.add, size: 18, color: Colors.white),
-                  label: const Text(
+                  label: const CustomTextWidget(
                     'Create Deal',
                     style: TextStyle(
                       fontSize: 13,
@@ -69,8 +72,13 @@ class DealsView extends GetView<DealsController> {
                   ),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFFFF6B35),
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 14,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
                     elevation: 0,
                   ),
                 ),
@@ -86,15 +94,9 @@ class DealsView extends GetView<DealsController> {
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: const [
-                  Expanded(
-                    flex: 52,
-                    child: DealsListSection(),
-                  ),
+                  Expanded(flex: 52, child: DealsListSection()),
                   SizedBox(width: 20),
-                  Expanded(
-                    flex: 48,
-                    child: DealEditorSection(),
-                  ),
+                  Expanded(flex: 48, child: DealEditorSection()),
                 ],
               ),
             ),
