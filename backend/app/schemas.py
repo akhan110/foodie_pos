@@ -151,6 +151,21 @@ class SizeOptionResponse(BaseModel):
         from_attributes = True
 
 
+class SizeOptionCreateRequest(BaseModel):
+    id: Optional[str] = None
+    name: str
+    extra_price: float
+    category_id: Optional[str] = None
+    is_active: Optional[bool] = True
+
+
+class SizeOptionUpdateRequest(BaseModel):
+    name: Optional[str] = None
+    extra_price: Optional[float] = None
+    category_id: Optional[str] = None
+    is_active: Optional[bool] = None
+
+
 class OrderItemResponse(BaseModel):
     id: str
     order_id: str

@@ -825,6 +825,90 @@ class MenuManagementView extends StatelessWidget {
 
                   const SizedBox(height: 16),
 
+                  // SIZE OPTIONS SECTION
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      _buildInputLabel(context, 'Size Options'),
+                      InkWell(
+                        onTap: () => _showAddSizeModal(context, controller),
+                        borderRadius: BorderRadius.circular(6),
+                        child: const Padding(
+                          padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          child: Text(
+                            '+ Add Size',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.primary,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+
+                  // SIZE OPTIONS CHIPS / MINI LIST
+                  Obx(() {
+                    if (controller.currentSizes.isEmpty) {
+                      return Text(
+                        'No custom sizes defined. Default standard sizes will be used.',
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: colors.onSurfaceVariant,
+                        ),
+                      );
+                    }
+
+                    return Wrap(
+                      spacing: 6,
+                      runSpacing: 6,
+                      children: controller.currentSizes.map((size) {
+                        final extraText = size.extraPrice > 0
+                            ? ' (+ Rs ${size.extraPrice.toStringAsFixed(0)})'
+                            : ' (Rs 0)';
+                        return Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: colors.surfaceContainer,
+                            borderRadius: BorderRadius.circular(6),
+                            border: Border.all(
+                              color: theme.dividerColor.withValues(alpha: 0.5),
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                '${size.name}$extraText',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600,
+                                  color: colors.onSurface,
+                                ),
+                              ),
+                              const SizedBox(width: 4),
+                              InkWell(
+                                onTap: () => controller.removeSizeOption(size.id),
+                                child: Icon(
+                                  Icons.close,
+                                  size: 13,
+                                  color: colors.onSurfaceVariant,
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      }).toList(),
+                    );
+                  }),
+
+                  const SizedBox(height: 16),
+
                   // ADD-ONS / EXTRAS SECTION
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -1150,6 +1234,57 @@ class MenuManagementView extends StatelessWidget {
             },
             style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
             child: const Text('Add Add-on', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showAddSizeModal(
+    BuildContext context,
+    MenuManagementController controller,
+  ) {
+    final nameCtrl = TextEditingController();
+    final priceCtrl = TextEditingController();
+
+    Get.dialog(
+      AlertDialog(
+        title: const Text('Add New Size Option'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: nameCtrl,
+              decoration: const InputDecoration(
+                labelText: 'Size Name (e.g. Large, Jumbo, XL)',
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: priceCtrl,
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(
+                labelText: 'Extra Price in Rs (e.g. 120, 0 for regular)',
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Get.back(),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              final name = nameCtrl.text.trim();
+              final extraPrice = double.tryParse(priceCtrl.text.trim()) ?? 0.0;
+              if (name.isNotEmpty) {
+                Get.back();
+                controller.addNewSizeOption(name, extraPrice);
+              }
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
+            child: const Text('Add Size', style: TextStyle(color: Colors.white)),
           ),
         ],
       ),

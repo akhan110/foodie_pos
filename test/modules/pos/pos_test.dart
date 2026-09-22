@@ -172,6 +172,30 @@ class MockPosRepository implements IPosRepository {
   }
 
   @override
+  Future<BaseResponseModel<ProductSizeOption>> createSizeOption(Map<String, dynamic> data) async {
+    return BaseResponseModel(
+      success: true,
+      message: 'Size created',
+      statusCode: 201,
+      data: ProductSizeOption(
+        id: 'sz-new',
+        name: data['name']?.toString() ?? '',
+        extraPrice: (data['extra_price'] as num?)?.toDouble() ?? 0.0,
+      ),
+    );
+  }
+
+  @override
+  Future<BaseResponseModel<dynamic>> deleteSizeOption(String id) async {
+    return BaseResponseModel(
+      success: true,
+      message: 'Size deleted',
+      statusCode: 200,
+      data: {'id': id},
+    );
+  }
+
+  @override
   Future<BaseResponseModel<Map<String, dynamic>>> createOrder(Map<String, dynamic> orderPayload) async {
     return BaseResponseModel(
       success: true,
@@ -385,6 +409,24 @@ void main() {
 
       await menuController.deleteProduct(target.id);
       expect(menuController.products.length, countBefore - 1);
+    });
+
+    test('5. Adds and deletes custom size options for a category', () async {
+      await menuController.loadMenu();
+      await menuController.fetchSizesForCategory('burgers');
+
+      expect(menuController.currentSizes.length, 2);
+      expect(menuController.currentSizes.first.name, 'Regular');
+
+      // Add XL Size
+      await menuController.addNewSizeOption('XL', 220);
+      expect(menuController.currentSizes.length, 3);
+      expect(menuController.currentSizes.last.name, 'XL');
+      expect(menuController.currentSizes.last.extraPrice, 220);
+
+      // Remove Size
+      await menuController.removeSizeOption('sz-new');
+      expect(menuController.currentSizes.length, 2);
     });
   });
 }

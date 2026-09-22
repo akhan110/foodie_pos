@@ -13,6 +13,7 @@ from ..schemas import (
     ProductCreateRequest,
     ProductResponse,
     ProductUpdateRequest,
+    SizeOptionCreateRequest,
     SizeOptionResponse,
 )
 
@@ -445,6 +446,57 @@ def get_size_options(
         "success": True,
         "message": f"Retrieved {len(result)} size options",
         "data": result,
+        "statusCode": 200,
+    }
+
+
+@router.post("/sizes", status_code=status.HTTP_201_CREATED)
+def create_size_option(req: SizeOptionCreateRequest, db: Session = Depends(get_db)):
+    """Create a new size option for a category."""
+    size_id = req.id if req.id and req.id.strip() else f"sz_{uuid.uuid4().hex[:8]}"
+
+    new_size = SizeOption(
+        id=size_id,
+        name=req.name,
+        extra_price=req.extra_price,
+        category_id=req.category_id.lower() if req.category_id else None,
+        is_active=req.is_active if req.is_active is not None else True,
+    )
+    db.add(new_size)
+    db.commit()
+    db.refresh(new_size)
+
+    return {
+        "success": True,
+        "message": "Size option created successfully",
+        "data": {
+            "id": new_size.id,
+            "name": new_size.name,
+            "extra_price": float(new_size.extra_price),
+            "category_id": new_size.category_id,
+            "is_active": new_size.is_active,
+        },
+        "statusCode": 201,
+    }
+
+
+@router.delete("/sizes/{size_id}")
+def delete_size_option(size_id: str, db: Session = Depends(get_db)):
+    """Delete a size option."""
+    size = db.query(SizeOption).filter(SizeOption.id == size_id).first()
+    if not size:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Size option with ID '{size_id}' not found.",
+        )
+
+    db.delete(size)
+    db.commit()
+
+    return {
+        "success": True,
+        "message": f"Size option '{size_id}' deleted successfully",
+        "data": {"id": size_id},
         "statusCode": 200,
     }
 

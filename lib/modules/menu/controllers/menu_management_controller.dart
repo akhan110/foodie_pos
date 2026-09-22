@@ -39,6 +39,10 @@ class MenuManagementController extends GetxController {
   final RxList<ProductExtraItem> currentAddons = <ProductExtraItem>[].obs;
   final RxBool isLoadingAddons = false.obs;
 
+  // Sizes for current category/product
+  final RxList<ProductSizeOption> currentSizes = <ProductSizeOption>[].obs;
+  final RxBool isLoadingSizes = false.obs;
+
   @override
   void onInit() {
     super.onInit();
@@ -139,6 +143,7 @@ class MenuManagementController extends GetxController {
     formImage.value = product.image;
 
     fetchAddonsForCategory(product.category.name.toLowerCase());
+    fetchSizesForCategory(product.category.name.toLowerCase());
   }
 
   void startNewProduct() {
@@ -153,12 +158,14 @@ class MenuManagementController extends GetxController {
     formImage.value = _getImageForCategory(formCategory.value);
 
     fetchAddonsForCategory(formCategory.value);
+    fetchSizesForCategory(formCategory.value);
   }
 
   void onCategoryFormChanged(String newCat) {
     formCategory.value = newCat;
     formImage.value = _getImageForCategory(newCat);
     fetchAddonsForCategory(newCat);
+    fetchSizesForCategory(newCat);
   }
 
   Future<void> fetchAddonsForCategory(String categoryId) async {
@@ -174,6 +181,30 @@ class MenuManagementController extends GetxController {
       currentAddons.clear();
     } finally {
       isLoadingAddons.value = false;
+    }
+  }
+
+  Future<void> fetchSizesForCategory(String categoryId) async {
+    try {
+      isLoadingSizes.value = true;
+      final res = await _repository.getSizeOptions(categoryId: categoryId);
+      if (res.success && res.data != null && res.data!.isNotEmpty) {
+        currentSizes.assignAll(res.data!);
+      } else {
+        currentSizes.assignAll([
+          const ProductSizeOption(id: 'regular', name: 'Regular', extraPrice: 0.0),
+          const ProductSizeOption(id: 'large', name: 'Large', extraPrice: 120.0),
+          const ProductSizeOption(id: 'xl', name: 'XL', extraPrice: 220.0),
+        ]);
+      }
+    } catch (_) {
+      currentSizes.assignAll([
+        const ProductSizeOption(id: 'regular', name: 'Regular', extraPrice: 0.0),
+        const ProductSizeOption(id: 'large', name: 'Large', extraPrice: 120.0),
+        const ProductSizeOption(id: 'xl', name: 'XL', extraPrice: 220.0),
+      ]);
+    } finally {
+      isLoadingSizes.value = false;
     }
   }
 
@@ -328,6 +359,39 @@ class MenuManagementController extends GetxController {
       currentAddons.removeWhere((a) => a.id == addonId);
     } catch (_) {
       currentAddons.removeWhere((a) => a.id == addonId);
+    }
+  }
+
+  Future<void> addNewSizeOption(String name, double extraPrice) async {
+    try {
+      final payload = {
+        'name': name,
+        'extra_price': extraPrice,
+        'category_id': formCategory.value,
+        'is_active': true,
+      };
+      final res = await _repository.createSizeOption(payload);
+      if (res.success && res.data != null) {
+        currentSizes.add(res.data!);
+      } else {
+        currentSizes.add(ProductSizeOption(
+          id: 'sz_${DateTime.now().millisecondsSinceEpoch}',
+          name: name,
+          extraPrice: extraPrice,
+        ));
+      }
+      _showNotification('Size Added', '$name (+ Rs ${extraPrice.toStringAsFixed(0)}) added to ${formCategory.value}');
+    } catch (e) {
+      _showNotification('Error', 'Failed to add size: $e', isError: true);
+    }
+  }
+
+  Future<void> removeSizeOption(String sizeId) async {
+    try {
+      await _repository.deleteSizeOption(sizeId);
+      currentSizes.removeWhere((s) => s.id == sizeId);
+    } catch (_) {
+      currentSizes.removeWhere((s) => s.id == sizeId);
     }
   }
 

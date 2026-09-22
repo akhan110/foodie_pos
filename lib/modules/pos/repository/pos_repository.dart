@@ -21,6 +21,8 @@ abstract class IPosRepository {
   Future<BaseResponseModel<dynamic>> deleteAddon(String id);
 
   Future<BaseResponseModel<List<ProductSizeOption>>> getSizeOptions({String? categoryId});
+  Future<BaseResponseModel<ProductSizeOption>> createSizeOption(Map<String, dynamic> data);
+  Future<BaseResponseModel<dynamic>> deleteSizeOption(String id);
   Future<BaseResponseModel<Map<String, dynamic>>> createOrder(Map<String, dynamic> orderPayload);
 }
 
@@ -206,6 +208,34 @@ class PosRepository implements IPosRepository {
         }
         return [];
       },
+    );
+  }
+
+  @override
+  Future<BaseResponseModel<ProductSizeOption>> createSizeOption(Map<String, dynamic> data) async {
+    return await _network.apiRequest<ProductSizeOption>(
+      requestType: ApiRequestType.post,
+      endPoint: '/api/v1/menu/sizes',
+      requestData: data,
+      isBearerRequired: true,
+      parser: (item) {
+        final map = item as Map<String, dynamic>;
+        return ProductSizeOption(
+          id: map['id']?.toString() ?? '',
+          name: map['name']?.toString() ?? '',
+          extraPrice: (map['extra_price'] as num?)?.toDouble() ?? 0.0,
+        );
+      },
+    );
+  }
+
+  @override
+  Future<BaseResponseModel<dynamic>> deleteSizeOption(String id) async {
+    return await _network.apiRequest<dynamic>(
+      requestType: ApiRequestType.delete,
+      endPoint: '/api/v1/menu/sizes/$id',
+      isBearerRequired: true,
+      parser: (data) => data,
     );
   }
 
