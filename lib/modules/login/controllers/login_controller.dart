@@ -1,6 +1,7 @@
 import 'package:foodiepos/app/constants/storage_keys.dart';
 import 'package:foodiepos/app/routes/app_routes.dart';
 import 'package:foodiepos/app/utils/app_loader.dart';
+import 'package:foodiepos/data/models/cashier_model.dart';
 import 'package:foodiepos/modules/login/repository/login_repository.dart';
 import 'package:foodiepos/services/network/api_exception.dart';
 import 'package:get/get.dart';
@@ -15,6 +16,53 @@ class LoginController extends GetxController {
   final RxString pin = ''.obs;
   final RxString errorMessage = ''.obs;
   final RxBool isLoading = false.obs;
+
+  // Active Cashiers for user selection
+  final RxList<CashierModel> cashiers = <CashierModel>[].obs;
+  final Rx<CashierModel?> selectedCashier = Rx<CashierModel?>(null);
+  final RxBool isLoadingCashiers = false.obs;
+
+  @override
+  void onInit() {
+    super.onInit();
+    loadCashiers();
+  }
+
+  Future<void> loadCashiers() async {
+    try {
+      isLoadingCashiers.value = true;
+      final res = await _loginRepository.getCashiers();
+      if (res.success && res.data != null && res.data!.isNotEmpty) {
+        cashiers.assignAll(res.data!);
+        final savedId = GetStorage().read(StorageKeys.cashierId);
+        final match = cashiers.firstWhereOrNull((c) => c.id == savedId);
+        selectedCashier.value = match ?? cashiers.first;
+      } else {
+        cashiers.assignAll([
+          CashierModel(id: 'alex-khan', name: 'Alex Khan', role: 'Cashier', storeName: 'Store #01', isActive: true),
+          CashierModel(id: 'sarah-smith', name: 'Sarah Smith', role: 'Manager', storeName: 'Store #01', isActive: true),
+          CashierModel(id: 'akhan', name: 'Akhan', role: 'manager', storeName: 'Kucks', isActive: true),
+        ]);
+        selectedCashier.value = cashiers.first;
+      }
+    } catch (e) {
+      cashiers.assignAll([
+        CashierModel(id: 'alex-khan', name: 'Alex Khan', role: 'Cashier', storeName: 'Store #01', isActive: true),
+        CashierModel(id: 'sarah-smith', name: 'Sarah Smith', role: 'Manager', storeName: 'Store #01', isActive: true),
+        CashierModel(id: 'akhan', name: 'Akhan', role: 'manager', storeName: 'Kucks', isActive: true),
+      ]);
+      selectedCashier.value = cashiers.first;
+    } finally {
+      isLoadingCashiers.value = false;
+    }
+  }
+
+  void selectCashier(CashierModel? cashier) {
+    if (cashier != null) {
+      selectedCashier.value = cashier;
+      clearPin();
+    }
+  }
 
   void onNumberPressed(String number) {
     if (isLoading.value) return;
@@ -56,7 +104,10 @@ class LoginController extends GetxController {
       errorMessage.value = '';
       AppLoader.show(status: 'Verifying PIN...');
 
-      final response = await _loginRepository.pinLogin(pin.value);
+      final response = await _loginRepository.pinLogin(
+        pin.value,
+        cashierId: selectedCashier.value?.id,
+      );
 
       if (response.success && response.data != null) {
         final authData = response.data!;

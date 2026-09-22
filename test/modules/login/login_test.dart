@@ -13,7 +13,34 @@ class MockLoginRepository implements ILoginRepository {
   String? errorMessage;
 
   @override
-  Future<BaseResponseModel<AuthDataModel>> pinLogin(String pin) async {
+  Future<BaseResponseModel<List<CashierModel>>> getCashiers() async {
+    return BaseResponseModel<List<CashierModel>>(
+      success: true,
+      message: 'Active cashiers retrieved successfully',
+      statusCode: 200,
+      data: [
+        CashierModel(
+          id: 'mock-uuid-1234',
+          name: 'Alex Khan',
+          email: 'alex@foodiepos.com',
+          role: 'cashier',
+          storeName: 'Store #01',
+          isActive: true,
+        ),
+        CashierModel(
+          id: 'mock-uuid-5678',
+          name: 'Akhan',
+          email: 'akhan@kucks.com',
+          role: 'manager',
+          storeName: 'Kucks',
+          isActive: true,
+        ),
+      ],
+    );
+  }
+
+  @override
+  Future<BaseResponseModel<AuthDataModel>> pinLogin(String pin, {String? cashierId}) async {
     if (!shouldSucceed) {
       throw ApiException(
         message: errorMessage ?? 'Invalid 4-digit PIN. Please try again.',
@@ -22,19 +49,20 @@ class MockLoginRepository implements ILoginRepository {
       );
     }
 
+    final isAkhan = cashierId == 'mock-uuid-5678';
     return BaseResponseModel<AuthDataModel>(
       success: true,
-      message: 'Welcome back, Alex Khan!',
+      message: isAkhan ? 'Welcome back, Akhan!' : 'Welcome back, Alex Khan!',
       statusCode: 200,
       data: AuthDataModel(
         accessToken: 'mock_jwt_token_12345',
         tokenType: 'bearer',
         user: CashierModel(
-          id: 'mock-uuid-1234',
-          name: 'Alex Khan',
-          email: 'alex@foodiepos.com',
-          role: 'cashier',
-          storeName: 'Store #01',
+          id: isAkhan ? 'mock-uuid-5678' : 'mock-uuid-1234',
+          name: isAkhan ? 'Akhan' : 'Alex Khan',
+          email: isAkhan ? 'akhan@kucks.com' : 'alex@foodiepos.com',
+          role: isAkhan ? 'manager' : 'cashier',
+          storeName: isAkhan ? 'Kucks' : 'Store #01',
           isActive: true,
         ),
       ),
@@ -161,6 +189,28 @@ void main() {
       expect(response.success, isTrue);
       expect(response.statusCode, 200);
       expect(response.message, contains('logged out successfully'));
+    });
+
+    test('5. Cashier dropdown loads and allows selecting a user', () async {
+      await controller.loadCashiers();
+      expect(controller.cashiers.length, 2);
+      expect(controller.selectedCashier.value?.name, 'Alex Khan');
+
+      // Select Akhan
+      controller.selectCashier(controller.cashiers.last);
+      expect(controller.selectedCashier.value?.name, 'Akhan');
+      expect(controller.selectedCashier.value?.storeName, 'Kucks');
+
+      // Login as Akhan
+      controller.onNumberPressed('1');
+      controller.onNumberPressed('2');
+      controller.onNumberPressed('3');
+      controller.onNumberPressed('4');
+
+      await Future.delayed(const Duration(milliseconds: 150));
+      expect(controller.errorMessage.value, isEmpty);
+      expect(GetStorage().read('cashier_name'), 'Akhan');
+      expect(GetStorage().read('cashier_store'), 'Kucks');
     });
   });
 }

@@ -4,7 +4,8 @@ import 'package:foodiepos/services/network/api_request_type.dart';
 import 'package:foodiepos/services/network/network.dart';
 
 abstract class ILoginRepository {
-  Future<BaseResponseModel<AuthDataModel>> pinLogin(String pin);
+  Future<BaseResponseModel<List<CashierModel>>> getCashiers();
+  Future<BaseResponseModel<AuthDataModel>> pinLogin(String pin, {String? cashierId});
   Future<BaseResponseModel<AuthDataModel>> emailLogin({
     required String email,
     required String password,
@@ -28,11 +29,31 @@ class LoginRepository implements ILoginRepository {
   LoginRepository({Network? network}) : _network = network ?? Network.instance;
 
   @override
-  Future<BaseResponseModel<AuthDataModel>> pinLogin(String pin) async {
+  Future<BaseResponseModel<List<CashierModel>>> getCashiers() async {
+    return await _network.apiRequest<List<CashierModel>>(
+      requestType: ApiRequestType.get,
+      endPoint: '/api/v1/auth/cashiers',
+      isBearerRequired: false,
+      parser: (data) {
+        if (data is List) {
+          return data
+              .map((item) => CashierModel.fromJson(Map<String, dynamic>.from(item as Map)))
+              .toList();
+        }
+        return [];
+      },
+    );
+  }
+
+  @override
+  Future<BaseResponseModel<AuthDataModel>> pinLogin(String pin, {String? cashierId}) async {
     return await _network.apiRequest<AuthDataModel>(
       requestType: ApiRequestType.post,
       endPoint: '/api/v1/auth/pin-login',
-      requestData: {'pin': pin.trim()},
+      requestData: {
+        'pin': pin.trim(),
+        if (cashierId != null && cashierId.isNotEmpty) 'cashier_id': cashierId.trim(),
+      },
       isBearerRequired: false,
       parser: (data) {
         if (data is Map<String, dynamic>) {

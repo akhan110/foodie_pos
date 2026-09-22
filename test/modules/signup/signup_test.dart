@@ -50,7 +50,17 @@ class MockSignupRepository implements ILoginRepository {
   }
 
   @override
-  Future<BaseResponseModel<AuthDataModel>> pinLogin(String pin) async =>
+  Future<BaseResponseModel<List<CashierModel>>> getCashiers() async {
+    return BaseResponseModel<List<CashierModel>>(
+      success: true,
+      message: 'Cashiers',
+      statusCode: 200,
+      data: [],
+    );
+  }
+
+  @override
+  Future<BaseResponseModel<AuthDataModel>> pinLogin(String pin, {String? cashierId}) async =>
       throw UnimplementedError();
 
   @override

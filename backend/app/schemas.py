@@ -6,6 +6,7 @@ from pydantic import BaseModel, field_validator
 
 class PinLoginRequest(BaseModel):
     pin: str
+    cashier_id: Optional[str] = None
 
 
 class EmailLoginRequest(BaseModel):

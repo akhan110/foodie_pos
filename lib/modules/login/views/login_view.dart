@@ -3,6 +3,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:foodiepos/app/routes/app_routes.dart';
 import 'package:foodiepos/app/theme/app_colors.dart';
 import 'package:foodiepos/app/widgets/custom_text_widget.dart';
+import 'package:foodiepos/data/models/cashier_model.dart';
 import 'package:foodiepos/modules/shell/controllers/connectivity_controller.dart';
 import 'package:get/get.dart';
 
@@ -194,14 +195,95 @@ class LoginView extends GetView<LoginController> {
             ],
           ),
 
-          const SizedBox(height: 10),
+          const SizedBox(height: 6),
 
           CustomTextWidget(
-            'Enter your 4-digit PIN',
-            style: TextStyle(fontSize: 14, color: colors.onSurfaceVariant),
+            'Select your account and enter 4-digit PIN',
+            style: TextStyle(fontSize: 13, color: colors.onSurfaceVariant),
           ),
 
-          const SizedBox(height: 20),
+          // CASHIER / USER SELECTION DROPDOWN
+          Obx(() {
+            final selected = controller.selectedCashier.value;
+            final cashiers = controller.cashiers;
+
+            if (cashiers.isEmpty) {
+              return const SizedBox(height: 10);
+            }
+
+            return Container(
+              margin: const EdgeInsets.only(top: 14, bottom: 10),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+              decoration: BoxDecoration(
+                color: isDark ? const Color(0xFF252A36) : const Color(0xFFF4F6F9),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: isDark ? const Color(0xFF2D333F) : Theme.of(context).dividerColor,
+                ),
+              ),
+              child: DropdownButtonHideUnderline(
+                child: DropdownButton<CashierModel>(
+                  value: cashiers.contains(selected) ? selected : cashiers.first,
+                  isExpanded: true,
+                  icon: Icon(
+                    Icons.keyboard_arrow_down_rounded,
+                    color: colors.onSurfaceVariant,
+                    size: 20,
+                  ),
+                  dropdownColor: isDark ? const Color(0xFF1E222B) : Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  onChanged: controller.selectCashier,
+                  items: cashiers.map((cashier) {
+                    return DropdownMenuItem<CashierModel>(
+                      value: cashier,
+                      child: Row(
+                        children: [
+                          CircleAvatar(
+                            radius: 14,
+                            backgroundColor: AppColors.primary.withValues(alpha: 0.15),
+                            child: CustomTextWidget(
+                              cashier.name.isNotEmpty ? cashier.name[0].toUpperCase() : 'U',
+                              style: const TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w800,
+                                color: AppColors.primary,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                CustomTextWidget(
+                                  cashier.name,
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w700,
+                                    color: colors.onSurface,
+                                  ),
+                                ),
+                                CustomTextWidget(
+                                  '${cashier.role.capitalizeFirst ?? cashier.role} • ${cashier.storeName}',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    color: colors.onSurfaceVariant,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ),
+            );
+          }),
+
+          const SizedBox(height: 12),
 
           // PIN INDICATOR DOTS
           Obx(

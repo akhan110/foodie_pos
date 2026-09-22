@@ -20,22 +20,60 @@ from ..schemas import (
 router = APIRouter(prefix="/api/v1/auth", tags=["Authentication"])
 
 
+@router.get("/cashiers")
+def get_active_cashiers(db: Session = Depends(get_db)):
+    """Fetch list of all active cashiers/staff for quick PIN login selector."""
+    cashiers = (
+        db.query(Cashier)
+        .filter(Cashier.is_active == True)
+        .order_by(Cashier.name.asc())
+        .all()
+    )
+    result = [
+        CashierResponse.model_validate(c).model_dump(mode="json")
+        for c in cashiers
+    ]
+    return {
+        "success": True,
+        "message": f"Retrieved {len(result)} cashiers.",
+        "data": result,
+        "statusCode": 200,
+    }
+
+
 @router.post("/pin-login")
 def pin_login(payload: PinLoginRequest, db: Session = Depends(get_db)):
     """Fast-food counter quick 4-digit PIN login."""
     pin = payload.pin.strip()
 
-    cashier = (
-        db.query(Cashier)
-        .filter(Cashier.pin == pin, Cashier.is_active == True)
-        .first()
-    )
+    query = db.query(Cashier).filter(Cashier.is_active == True)
 
-    if not cashier:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid 4-digit PIN. Please try again.",
-        )
+    if payload.cashier_id and payload.cashier_id.strip():
+        # Match by specific selected cashier ID
+        cashier_id_clean = payload.cashier_id.strip()
+        cashier = query.filter(
+            (Cashier.id == cashier_id_clean) | (Cashier.name.ilike(cashier_id_clean))
+        ).first()
+
+        if not cashier:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Selected cashier account not found.",
+            )
+
+        if (cashier.pin or "").strip() != pin:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail=f"Incorrect PIN for {cashier.name}. Please try again.",
+            )
+    else:
+        # Fallback to finding by PIN
+        cashier = query.filter(Cashier.pin == pin).first()
+        if not cashier:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid 4-digit PIN. Please try again.",
+            )
 
     access_token = create_access_token(
         data={"sub": str(cashier.id), "name": cashier.name, "role": cashier.role}
