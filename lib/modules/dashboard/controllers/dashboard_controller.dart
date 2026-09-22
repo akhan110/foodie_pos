@@ -36,17 +36,18 @@ class DashboardController extends GetxController {
       final response = await _network.apiRequest<Map<String, dynamic>>(
         requestType: ApiRequestType.get,
         endPoint: '/api/v1/analytics/overview',
+        queryParameters: {'range': selectedTimeRange.value},
         isBearerRequired: false,
         parser: (json) => json is Map<String, dynamic> ? json : {},
       );
 
       if (response.success && response.data != null && response.data!.isNotEmpty) {
-        _parseAndSetData(response.data!);
+        data.value = DashboardModel.fromJson(response.data!);
       } else {
         _setExactVisualData();
       }
     } catch (e) {
-      debugPrint('Analytics fallback used: $e');
+      debugPrint('Analytics live fetch fallback used: $e');
       _setExactVisualData();
     } finally {
       isLoading.value = false;
@@ -58,30 +59,17 @@ class DashboardController extends GetxController {
     fetchAnalytics(showSpinner: false);
   }
 
-  void _parseAndSetData(Map<String, dynamic> json) {
-    final rev = (json['total_revenue'] as num?)?.toDouble() ?? 12480.0;
-    final ord = (json['total_orders'] as num?)?.toInt() ?? 86;
-    final aov = (json['avg_order_value'] as num?)?.toDouble() ?? 145.0;
-    final tax = (json['total_tax'] as num?)?.toDouble() ?? 1210.0;
-
-    _setExactVisualData(revOverride: rev, ordersOverride: ord, aovOverride: aov, taxOverride: tax);
-  }
-
-  void _setExactVisualData({
-    double? revOverride,
-    int? ordersOverride,
-    double? aovOverride,
-    double? taxOverride,
-  }) {
+  void _setExactVisualData() {
     data.value = DashboardModel(
-      totalRevenue: revOverride ?? 12480.0,
+      totalRevenue: 12480.0,
       revenueChange: '+14.2%',
-      completedOrders: ordersOverride ?? 86,
+      completedOrders: 86,
       ordersChange: '+8.1%',
-      avgOrderValue: aovOverride ?? 145.0,
+      avgOrderValue: 145.0,
       aovChange: '+5.6%',
-      taxesAndDiscounts: taxOverride ?? 1210.0,
+      taxesAndDiscounts: 1210.0,
       taxChange: '-3.4%',
+      comparisonLabel: 'vs. yesterday',
       hourlyData: [
         HourlyDataPoint(label: '8AM', revenue: 2100, orders: 8),
         HourlyDataPoint(label: '9AM', revenue: 1400, orders: 12),

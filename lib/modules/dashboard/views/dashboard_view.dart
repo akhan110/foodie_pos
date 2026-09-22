@@ -48,6 +48,8 @@ class DashboardView extends GetView<DashboardController> {
         final recent = data?.recentOrders ?? [];
         final payments = data?.paymentMethods ?? {};
 
+        final compLabel = data?.comparisonLabel ?? 'vs. yesterday';
+
         return RefreshIndicator(
           onRefresh: () => controller.fetchAnalytics(showSpinner: false),
           color: AppColors.primary,
@@ -185,9 +187,10 @@ class DashboardView extends GetView<DashboardController> {
                     Expanded(
                       child: KpiCard(
                         title: 'Total Revenue',
-                        value: 'Rs ${rev.toStringAsFixed(0)}',
+                        value: 'Rs ${_formatCurrency(rev)}',
                         badgeText: revChg,
-                        isPositive: true,
+                        isPositive: !revChg.startsWith('-'),
+                        comparisonLabel: compLabel,
                         icon: Icons.bar_chart_rounded,
                         iconBgColor: const Color(0xFF12B76A),
                         barColor: const Color(0xFF12B76A),
@@ -199,7 +202,8 @@ class DashboardView extends GetView<DashboardController> {
                         title: 'Completed Orders',
                         value: '$ord',
                         badgeText: ordChg,
-                        isPositive: true,
+                        isPositive: !ordChg.startsWith('-'),
+                        comparisonLabel: compLabel,
                         icon: Icons.shopping_cart_outlined,
                         iconBgColor: const Color(0xFF2E90FA),
                         barColor: const Color(0xFF2E90FA),
@@ -209,9 +213,10 @@ class DashboardView extends GetView<DashboardController> {
                     Expanded(
                       child: KpiCard(
                         title: 'Avg Order Value',
-                        value: 'Rs ${aov.toStringAsFixed(0)}',
+                        value: 'Rs ${_formatCurrency(aov)}',
                         badgeText: aovChg,
-                        isPositive: true,
+                        isPositive: !aovChg.startsWith('-'),
+                        comparisonLabel: compLabel,
                         icon: Icons.receipt_outlined,
                         iconBgColor: const Color(0xFFF79009),
                         barColor: const Color(0xFFF79009),
@@ -221,9 +226,10 @@ class DashboardView extends GetView<DashboardController> {
                     Expanded(
                       child: KpiCard(
                         title: 'Taxes & Discounts',
-                        value: 'Rs ${tax.toStringAsFixed(0)}',
+                        value: 'Rs ${_formatCurrency(tax)}',
                         badgeText: taxChg,
-                        isPositive: false,
+                        isPositive: !taxChg.startsWith('-'),
+                        comparisonLabel: compLabel,
                         icon: Icons.local_offer_outlined,
                         iconBgColor: const Color(0xFF7A5AF8),
                         barColor: const Color(0xFF7A5AF8),
@@ -318,5 +324,22 @@ class DashboardView extends GetView<DashboardController> {
         );
       }),
     );
+  }
+
+  String _formatCurrency(double amount) {
+    if (amount >= 1000) {
+      final parts = amount.toStringAsFixed(0).split('');
+      final buffer = StringBuffer();
+      int count = 0;
+      for (int i = parts.length - 1; i >= 0; i--) {
+        if (count > 0 && count % 3 == 0) {
+          buffer.write(',');
+        }
+        buffer.write(parts[i]);
+        count++;
+      }
+      return buffer.toString().split('').reversed.join('');
+    }
+    return amount.toStringAsFixed(0);
   }
 }

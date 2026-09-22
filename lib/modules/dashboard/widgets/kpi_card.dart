@@ -8,6 +8,7 @@ class KpiCard extends StatelessWidget {
   final IconData icon;
   final Color iconBgColor;
   final Color barColor;
+  final String comparisonLabel;
 
   const KpiCard({
     super.key,
@@ -18,6 +19,7 @@ class KpiCard extends StatelessWidget {
     required this.icon,
     required this.iconBgColor,
     required this.barColor,
+    this.comparisonLabel = 'vs. yesterday',
   });
 
   @override
@@ -126,7 +128,7 @@ class KpiCard extends StatelessWidget {
                           ),
                           const SizedBox(width: 6),
                           Text(
-                            'vs. yesterday',
+                            comparisonLabel,
                             style: TextStyle(
                               fontSize: 10,
                               color: colors.onSurfaceVariant,
