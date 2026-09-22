@@ -1,13 +1,13 @@
 class TopSellingItemModel {
   final String name;
   final int quantity;
-  final double total;
+  final double price;
   final String image;
 
   TopSellingItemModel({
     required this.name,
     required this.quantity,
-    required this.total,
+    required this.price,
     required this.image,
   });
 
@@ -15,66 +15,82 @@ class TopSellingItemModel {
     return TopSellingItemModel(
       name: json['name']?.toString() ?? '',
       quantity: (json['quantity'] as num?)?.toInt() ?? 0,
-      total: (json['total'] as num?)?.toDouble() ?? 0.0,
+      price: (json['price'] as num?)?.toDouble() ?? (json['total'] as num?)?.toDouble() ?? 0.0,
       image: json['image']?.toString() ?? 'assets/svg/products/burger.svg',
     );
   }
 }
 
+class RecentOrderRowModel {
+  final String orderNumber;
+  final String time;
+  final String orderType;
+  final int itemsCount;
+  final double total;
+  final String status;
+
+  RecentOrderRowModel({
+    required this.orderNumber,
+    required this.time,
+    required this.orderType,
+    required this.itemsCount,
+    required this.total,
+    required this.status,
+  });
+}
+
+class OrderTypeStatModel {
+  final String type;
+  final int percentage;
+  final int count;
+
+  OrderTypeStatModel({
+    required this.type,
+    required this.percentage,
+    required this.count,
+  });
+}
+
+class HourlyDataPoint {
+  final String label;
+  final double revenue;
+  final int orders;
+
+  HourlyDataPoint({
+    required this.label,
+    required this.revenue,
+    required this.orders,
+  });
+}
+
 class DashboardModel {
   final double totalRevenue;
-  final int totalOrders;
+  final String revenueChange;
+  final int completedOrders;
+  final String ordersChange;
   final double avgOrderValue;
-  final double totalDiscount;
-  final double totalTax;
-  final Map<String, double> paymentBreakdown;
+  final String aovChange;
+  final double taxesAndDiscounts;
+  final String taxChange;
+  final List<HourlyDataPoint> hourlyData;
+  final List<OrderTypeStatModel> orderTypes;
   final List<TopSellingItemModel> topSellingItems;
-  final List<double> hourlySales;
+  final List<RecentOrderRowModel> recentOrders;
+  final Map<String, Map<String, dynamic>> paymentMethods;
 
   DashboardModel({
     required this.totalRevenue,
-    required this.totalOrders,
+    required this.revenueChange,
+    required this.completedOrders,
+    required this.ordersChange,
     required this.avgOrderValue,
-    required this.totalDiscount,
-    required this.totalTax,
-    required this.paymentBreakdown,
+    required this.aovChange,
+    required this.taxesAndDiscounts,
+    required this.taxChange,
+    required this.hourlyData,
+    required this.orderTypes,
     required this.topSellingItems,
-    required this.hourlySales,
+    required this.recentOrders,
+    required this.paymentMethods,
   });
-
-  factory DashboardModel.fromJson(Map<String, dynamic> json) {
-    final payments = <String, double>{};
-    if (json['payment_breakdown'] is Map) {
-      (json['payment_breakdown'] as Map).forEach((k, v) {
-        payments[k.toString()] = (v as num?)?.toDouble() ?? 0.0;
-      });
-    }
-
-    final topList = <TopSellingItemModel>[];
-    if (json['top_selling_items'] is List) {
-      for (final item in json['top_selling_items']) {
-        if (item is Map<String, dynamic>) {
-          topList.add(TopSellingItemModel.fromJson(item));
-        }
-      }
-    }
-
-    final hours = <double>[];
-    if (json['hourly_sales'] is List) {
-      for (final h in json['hourly_sales']) {
-        hours.add((h as num?)?.toDouble() ?? 0.0);
-      }
-    }
-
-    return DashboardModel(
-      totalRevenue: (json['total_revenue'] as num?)?.toDouble() ?? 0.0,
-      totalOrders: (json['total_orders'] as num?)?.toInt() ?? 0,
-      avgOrderValue: (json['avg_order_value'] as num?)?.toDouble() ?? 0.0,
-      totalDiscount: (json['total_discount'] as num?)?.toDouble() ?? 0.0,
-      totalTax: (json['total_tax'] as num?)?.toDouble() ?? 0.0,
-      paymentBreakdown: payments,
-      topSellingItems: topList,
-      hourlySales: hours.isNotEmpty ? hours : List.filled(24, 0.0),
-    );
-  }
 }

@@ -3,21 +3,21 @@ import 'package:flutter/material.dart';
 class KpiCard extends StatelessWidget {
   final String title;
   final String value;
-  final String subtitle;
-  final IconData icon;
-  final Color accentColor;
-  final String? badgeText;
+  final String badgeText;
   final bool isPositive;
+  final IconData icon;
+  final Color iconBgColor;
+  final Color barColor;
 
   const KpiCard({
     super.key,
     required this.title,
     required this.value,
-    required this.subtitle,
+    required this.badgeText,
+    required this.isPositive,
     required this.icon,
-    required this.accentColor,
-    this.badgeText,
-    this.isPositive = true,
+    required this.iconBgColor,
+    required this.barColor,
   });
 
   @override
@@ -27,110 +27,161 @@ class KpiCard extends StatelessWidget {
     final colors = theme.colorScheme;
 
     return Container(
-      padding: const EdgeInsets.all(18),
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
       decoration: BoxDecoration(
         color: isDark ? const Color(0xFF1E222B) : Colors.white,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: isDark ? const Color(0xFF2A313F) : theme.dividerColor.withValues(alpha: 0.7),
+          color: isDark ? const Color(0xFF2A313F) : const Color(0xFFEAECF0),
         ),
         boxShadow: [
           BoxShadow(
-            color: isDark ? Colors.black.withValues(alpha: 0.25) : Colors.black.withValues(alpha: 0.03),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+            color: isDark ? Colors.black.withValues(alpha: 0.25) : Colors.black.withValues(alpha: 0.02),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
           ),
         ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          // Top Row: Title + Icon
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                title.toUpperCase(),
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 0.8,
-                  color: colors.onSurfaceVariant,
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: accentColor.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Icon(icon, color: accentColor, size: 18),
-              ),
-            ],
-          ),
-
-          const SizedBox(height: 12),
-
-          // Main Metric Value
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.w900,
-              color: colors.onSurface,
-              letterSpacing: -0.5,
-            ),
-          ),
-
-          const SizedBox(height: 8),
-
-          // Subtitle / Trend badge
-          Row(
-            children: [
-              if (badgeText != null) ...[
+          // Left: Icon + Metric info
+          Expanded(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Icon Box
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  width: 44,
+                  height: 44,
                   decoration: BoxDecoration(
-                    color: (isPositive ? Colors.green : Colors.red).withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(4),
+                    color: iconBgColor,
+                    borderRadius: BorderRadius.circular(12),
                   ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
+                  child: Center(
+                    child: Icon(icon, color: Colors.white, size: 22),
+                  ),
+                ),
+                const SizedBox(width: 14),
+
+                // Content
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(
-                        isPositive ? Icons.trending_up : Icons.trending_down,
-                        size: 11,
-                        color: isPositive ? Colors.green : Colors.red,
-                      ),
-                      const SizedBox(width: 2),
                       Text(
-                        badgeText!,
+                        title,
                         style: TextStyle(
-                          fontSize: 10,
-                          fontWeight: FontWeight.bold,
-                          color: isPositive ? Colors.green : Colors.red,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: colors.onSurfaceVariant,
                         ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        value,
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w900,
+                          color: colors.onSurface,
+                          letterSpacing: -0.4,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 6),
+
+                      // Change Badge
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: isPositive
+                                  ? const Color(0xFFE8FDF2)
+                                  : const Color(0xFFFFECEB),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  isPositive ? Icons.arrow_drop_up : Icons.arrow_drop_down,
+                                  size: 14,
+                                  color: isPositive ? const Color(0xFF12B76A) : const Color(0xFFF04438),
+                                ),
+                                Text(
+                                  badgeText,
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w700,
+                                    color: isPositive ? const Color(0xFF12B76A) : const Color(0xFFF04438),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            'vs. yesterday',
+                            style: TextStyle(
+                              fontSize: 10,
+                              color: colors.onSurfaceVariant,
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
                 ),
-                const SizedBox(width: 8),
               ],
-              Expanded(
-                child: Text(
-                  subtitle,
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: colors.onSurfaceVariant,
-                  ),
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-            ],
+            ),
+          ),
+
+          // Right: Decorative mini bar chart illustration
+          SizedBox(
+            width: 44,
+            height: 38,
+            child: CustomPaint(
+              painter: _MiniBarChartPainter(color: barColor),
+            ),
           ),
         ],
       ),
     );
   }
+}
+
+class _MiniBarChartPainter extends CustomPainter {
+  final Color color;
+
+  _MiniBarChartPainter({required this.color});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final heights = [0.4, 0.65, 0.9, 1.0];
+    final barWidth = size.width / (heights.length * 2);
+    final paint = Paint()..style = PaintingStyle.fill;
+
+    for (int i = 0; i < heights.length; i++) {
+      final h = size.height * heights[i];
+      final x = i * barWidth * 2 + barWidth / 2;
+      final y = size.height - h;
+
+      final rect = RRect.fromRectAndRadius(
+        Rect.fromLTWH(x, y, barWidth, h),
+        const Radius.circular(2),
+      );
+
+      final alpha = 0.25 + (i * 0.25);
+      paint.color = color.withValues(alpha: alpha);
+      canvas.drawRRect(rect, paint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

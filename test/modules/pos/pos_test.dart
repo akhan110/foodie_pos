@@ -511,9 +511,9 @@ void main() {
       await dashController.fetchAnalytics(showSpinner: false);
       expect(dashController.data.value, isNotNull);
       expect(dashController.data.value!.totalRevenue > 0, true);
-      expect(dashController.data.value!.totalOrders > 0, true);
+      expect(dashController.data.value!.completedOrders > 0, true);
       expect(dashController.data.value!.topSellingItems.isNotEmpty, true);
-      expect(dashController.data.value!.hourlySales.length, 24);
+      expect(dashController.data.value!.hourlyData.isNotEmpty, true);
     });
 
     test('2. Updates selected time range', () {
