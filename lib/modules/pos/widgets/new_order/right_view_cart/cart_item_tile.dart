@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:foodiepos/app/theme/app_colors.dart';
 import 'package:foodiepos/app/widgets/custom_text_widget.dart';
+import 'package:foodiepos/modules/pos/model/cart_model.dart';
 
-class CartItemTile extends StatelessWidget {
+class CartItemTile extends StatefulWidget {
   const CartItemTile({
     super.key,
     required this.name,
@@ -11,6 +13,7 @@ class CartItemTile extends StatelessWidget {
     required this.quantity,
     required this.image,
     required this.onRemove,
+    this.extras = const [],
     this.onDecrease,
     this.onIncrease,
   });
@@ -20,14 +23,23 @@ class CartItemTile extends StatelessWidget {
   final double price;
   final int quantity;
   final String image;
+  final List<ProductExtraItem> extras;
   final VoidCallback onRemove;
   final VoidCallback? onDecrease;
   final VoidCallback? onIncrease;
 
   @override
+  State<CartItemTile> createState() => _CartItemTileState();
+}
+
+class _CartItemTileState extends State<CartItemTile> {
+  bool _isExpanded = false;
+
+  @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colors = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
 
     return Container(
       padding: const EdgeInsets.all(10),
@@ -50,13 +62,15 @@ class CartItemTile extends StatelessWidget {
                 width: 38,
                 height: 38,
                 decoration: BoxDecoration(
-                  color: colors.surfaceContainerHighest,
+                  color: isDark
+                      ? const Color(0xFF222B3B)
+                      : colors.surfaceContainerHighest,
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(8),
                   child: SvgPicture.asset(
-                    image,
+                    widget.image,
                     fit: BoxFit.contain,
                     errorBuilder: (context, error, stackTrace) {
                       return Icon(
@@ -77,7 +91,7 @@ class CartItemTile extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     CustomTextWidget(
-                      name,
+                      widget.name,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: theme.textTheme.bodyMedium?.copyWith(
@@ -87,7 +101,7 @@ class CartItemTile extends StatelessWidget {
                     ),
                     const SizedBox(height: 2),
                     CustomTextWidget(
-                      subtitle,
+                      widget.subtitle,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: theme.textTheme.bodySmall?.copyWith(
@@ -105,7 +119,7 @@ class CartItemTile extends StatelessWidget {
               Tooltip(
                 message: 'Remove item',
                 child: InkWell(
-                  onTap: onRemove,
+                  onTap: widget.onRemove,
                   borderRadius: BorderRadius.circular(6),
                   child: Padding(
                     padding: const EdgeInsets.all(4),
@@ -119,6 +133,121 @@ class CartItemTile extends StatelessWidget {
               ),
             ],
           ),
+
+          // ============================================================
+          // ADDONS DROPDOWN SECTION (IF ITEM HAS EXTRAS)
+          // ============================================================
+          if (widget.extras.isNotEmpty) ...[
+            const SizedBox(height: 6),
+            InkWell(
+              onTap: () => setState(() => _isExpanded = !_isExpanded),
+              borderRadius: BorderRadius.circular(6),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: isDark
+                      ? const Color(0xFF1E2636)
+                      : colors.surfaceContainerHighest.withValues(alpha: 0.5),
+                  borderRadius: BorderRadius.circular(6),
+                  border: Border.all(
+                    color: theme.dividerColor.withValues(alpha: 0.4),
+                  ),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.tune,
+                          size: 12,
+                          color: AppColors.primary,
+                        ),
+                        const SizedBox(width: 5),
+                        Text(
+                          '${widget.extras.length} Add-on${widget.extras.length > 1 ? 's' : ''}',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: isDark ? Colors.white70 : colors.onSurface,
+                          ),
+                        ),
+                      ],
+                    ),
+                    Icon(
+                      _isExpanded
+                          ? Icons.keyboard_arrow_up
+                          : Icons.keyboard_arrow_down,
+                      size: 16,
+                      color: colors.onSurfaceVariant,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+            if (_isExpanded) ...[
+              const SizedBox(height: 4),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                decoration: BoxDecoration(
+                  color: isDark
+                      ? const Color(0xFF18202E)
+                      : const Color(0xFFF9FAFB),
+                  borderRadius: BorderRadius.circular(6),
+                  border: Border.all(
+                    color: theme.dividerColor.withValues(alpha: 0.3),
+                  ),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: widget.extras.map((extra) {
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 2),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Container(
+                                width: 4,
+                                height: 4,
+                                decoration: const BoxDecoration(
+                                  color: AppColors.primary,
+                                  shape: BoxShape.circle,
+                                ),
+                              ),
+                              const SizedBox(width: 6),
+                              Text(
+                                extra.name,
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  color: colors.onSurfaceVariant,
+                                ),
+                              ),
+                            ],
+                          ),
+                          Text(
+                            '+ Rs ${extra.price.toStringAsFixed(0)}',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              color: isDark
+                                  ? AppColors.primary.withValues(alpha: 0.9)
+                                  : AppColors.primary,
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ),
+            ],
+          ],
 
           const SizedBox(height: 8),
 
@@ -140,12 +269,12 @@ class CartItemTile extends StatelessWidget {
                   children: [
                     _QuantityButton(
                       icon: Icons.remove,
-                      onTap: onDecrease ?? () {},
+                      onTap: widget.onDecrease ?? () {},
                     ),
                     SizedBox(
                       width: 26,
                       child: CustomTextWidget(
-                        '$quantity',
+                        '${widget.quantity}',
                         textAlign: TextAlign.center,
                         style: theme.textTheme.bodyMedium?.copyWith(
                           fontWeight: FontWeight.w600,
@@ -155,7 +284,7 @@ class CartItemTile extends StatelessWidget {
                     ),
                     _QuantityButton(
                       icon: Icons.add,
-                      onTap: onIncrease ?? () {},
+                      onTap: widget.onIncrease ?? () {},
                     ),
                   ],
                 ),
@@ -163,7 +292,7 @@ class CartItemTile extends StatelessWidget {
 
               // PRICE
               CustomTextWidget(
-                'Rs ${price.toStringAsFixed(0)}',
+                'Rs ${widget.price.toStringAsFixed(0)}',
                 textAlign: TextAlign.right,
                 style: theme.textTheme.bodyMedium?.copyWith(
                   fontWeight: FontWeight.w700,

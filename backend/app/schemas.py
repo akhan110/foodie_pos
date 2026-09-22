@@ -75,6 +75,42 @@ class ProductResponse(BaseModel):
         from_attributes = True
 
 
+class AddonResponse(BaseModel):
+    id: str
+    name: str
+    price: float
+    category_id: Optional[str] = None
+    is_active: bool = True
+
+    @field_validator("price", mode="before")
+    @classmethod
+    def convert_decimal_to_float(cls, v: Any) -> float:
+        if isinstance(v, Decimal):
+            return float(v)
+        return float(v)
+
+    class Config:
+        from_attributes = True
+
+
+class SizeOptionResponse(BaseModel):
+    id: str
+    name: str
+    extra_price: float
+    category_id: Optional[str] = None
+    is_active: bool = True
+
+    @field_validator("extra_price", mode="before")
+    @classmethod
+    def convert_decimal_to_float(cls, v: Any) -> float:
+        if isinstance(v, Decimal):
+            return float(v)
+        return float(v)
+
+    class Config:
+        from_attributes = True
+
+
 class ApiResponse(BaseModel):
     success: bool
     message: str

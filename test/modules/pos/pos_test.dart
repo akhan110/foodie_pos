@@ -70,6 +70,32 @@ class MockPosRepository implements IPosRepository {
   }
 
   @override
+  Future<BaseResponseModel<List<ProductExtraItem>>> getAddons({String? categoryId}) async {
+    return BaseResponseModel(
+      success: true,
+      message: 'Addons retrieved',
+      statusCode: 200,
+      data: [
+        const ProductExtraItem(id: 'cheese', name: 'Extra cheese', price: 90),
+        const ProductExtraItem(id: 'jalapenos', name: 'Jalapeños', price: 60),
+      ],
+    );
+  }
+
+  @override
+  Future<BaseResponseModel<List<ProductSizeOption>>> getSizeOptions({String? categoryId}) async {
+    return BaseResponseModel(
+      success: true,
+      message: 'Sizes retrieved',
+      statusCode: 200,
+      data: [
+        const ProductSizeOption(id: 'regular', name: 'Regular', extraPrice: 0),
+        const ProductSizeOption(id: 'large', name: 'Large', extraPrice: 120),
+      ],
+    );
+  }
+
+  @override
   Future<BaseResponseModel<Map<String, dynamic>>> createOrder(Map<String, dynamic> orderPayload) async {
     return BaseResponseModel(
       success: true,

@@ -51,3 +51,23 @@ class Product(Base):
     created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
 
     category_rel = relationship("Category", back_populates="products")
+
+
+class Addon(Base):
+    __tablename__ = "addons"
+
+    id = Column(String(50), primary_key=True)
+    name = Column(String(100), nullable=False)
+    price = Column(Numeric(10, 2), nullable=False, default=0.0)
+    category_id = Column(String(50), ForeignKey("categories.id"), nullable=True, index=True)
+    is_active = Column(Boolean, default=True)
+
+
+class SizeOption(Base):
+    __tablename__ = "size_options"
+
+    id = Column(String(50), primary_key=True)
+    name = Column(String(50), nullable=False)
+    extra_price = Column(Numeric(10, 2), nullable=False, default=0.0)
+    category_id = Column(String(50), ForeignKey("categories.id"), nullable=True, index=True)
+    is_active = Column(Boolean, default=True)

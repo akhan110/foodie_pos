@@ -59,6 +59,7 @@ class CartItemList extends GetView<PosController> {
             price: cartItem.subtotal,
             quantity: cartItem.quantity,
             image: cartItem.product.image,
+            extras: cartItem.extras,
             onRemove: () => controller.removeFromCart(cartItem.id),
             onIncrease: () => controller.incrementCartItem(cartItem.id),
             onDecrease: () => controller.decrementCartItem(cartItem.id),
