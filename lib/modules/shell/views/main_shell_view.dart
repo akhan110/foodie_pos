@@ -4,6 +4,7 @@ import 'package:foodiepos/app/widgets/app_bar_widget.dart';
 import 'package:foodiepos/app/widgets/custom_text_widget.dart';
 import 'package:foodiepos/app/widgets/unsupported_screen_view.dart';
 import 'package:foodiepos/modules/dashboard/views/dashboard_view.dart';
+import 'package:foodiepos/modules/deals/views/deals_view.dart';
 import 'package:foodiepos/modules/menu/views/menu_management_view.dart';
 import 'package:foodiepos/modules/orders/views/orders_view.dart';
 import 'package:foodiepos/modules/pos/controllers/pos_controller.dart';
@@ -101,18 +102,22 @@ class MainShellView extends StatelessWidget {
                           }
 
                           if (controller.selectedIndex == 4) {
+                            return const DealsView();
+                          }
+
+                          if (controller.selectedIndex == 5) {
                             return const Center(
                               child: CustomTextWidget('Reports Screen'),
                             );
                           }
 
-                          if (controller.selectedIndex == 5) {
+                          if (controller.selectedIndex == 6) {
                             return const Center(
                               child: CustomTextWidget('Users Screen'),
                             );
                           }
 
-                          if (controller.selectedIndex == 6) {
+                          if (controller.selectedIndex == 7) {
                             return const Center(
                               child: CustomTextWidget('Settings Screen'),
                             );

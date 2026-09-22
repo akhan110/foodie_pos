@@ -1,4 +1,5 @@
 import 'package:foodiepos/modules/dashboard/controllers/dashboard_controller.dart';
+import 'package:foodiepos/modules/deals/controllers/deals_controller.dart';
 import 'package:foodiepos/modules/login/repository/login_repository.dart';
 import 'package:foodiepos/modules/pos/repository/pos_repository.dart';
 import 'package:foodiepos/modules/shell/controller/main_shell_controller.dart';
@@ -20,5 +21,6 @@ class PosBinding extends Bindings {
     Get.lazyPut<PosController>(() => PosController());
     Get.lazyPut<ShiftController>(() => ShiftController());
     Get.lazyPut<DashboardController>(() => DashboardController());
+    Get.lazyPut<DealsController>(() => DealsController());
   }
 }

@@ -257,3 +257,84 @@ class ApiResponse(BaseModel):
     data: Optional[Any] = None
     statusCode: int = 200
 
+
+class DealItemResponse(BaseModel):
+    id: str
+    deal_id: Optional[str] = None
+    product_id: Optional[str] = None
+    product_name: str
+    product_image: str = "assets/svg/products/burger.svg"
+    quantity: int = 1
+    unit_price: float = 0.0
+    total_price: float = 0.0
+
+    @field_validator("unit_price", "total_price", mode="before")
+    @classmethod
+    def convert_decimal_to_float(cls, v: Any) -> float:
+        if isinstance(v, Decimal):
+            return float(v)
+        return float(v or 0.0)
+
+    class Config:
+        from_attributes = True
+
+
+class DealItemCreate(BaseModel):
+    id: Optional[str] = None
+    product_id: Optional[str] = None
+    product_name: str
+    product_image: Optional[str] = "assets/svg/products/burger.svg"
+    quantity: int = 1
+    unit_price: float = 0.0
+    total_price: float = 0.0
+
+
+class DealResponse(BaseModel):
+    id: str
+    name: str
+    description: Optional[str] = None
+    category: str = "Meal Combos"
+    price: float
+    original_price: float = 0.0
+    discount_amount: float = 0.0
+    image: str = "assets/svg/products/burger.svg"
+    is_active: bool = True
+    created_at: Optional[Any] = None
+    items: List[DealItemResponse] = []
+
+    @field_validator("price", "original_price", "discount_amount", mode="before")
+    @classmethod
+    def convert_decimal_to_float(cls, v: Any) -> float:
+        if isinstance(v, Decimal):
+            return float(v)
+        return float(v or 0.0)
+
+    class Config:
+        from_attributes = True
+
+
+class DealCreateRequest(BaseModel):
+    id: Optional[str] = None
+    name: str
+    description: Optional[str] = None
+    category: Optional[str] = "Meal Combos"
+    price: float
+    original_price: Optional[float] = 0.0
+    discount_amount: Optional[float] = 0.0
+    image: Optional[str] = "assets/svg/products/burger.svg"
+    is_active: Optional[bool] = True
+    items: List[DealItemCreate] = []
+
+
+class DealUpdateRequest(BaseModel):
+    name: Optional[str] = None
+    description: Optional[str] = None
+    category: Optional[str] = None
+    price: Optional[float] = None
+    original_price: Optional[float] = None
+    discount_amount: Optional[float] = None
+    image: Optional[str] = None
+    is_active: Optional[bool] = None
+    items: Optional[List[DealItemCreate]] = None
+
+

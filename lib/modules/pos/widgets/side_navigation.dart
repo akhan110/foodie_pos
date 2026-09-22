@@ -56,26 +56,34 @@ class SideNavigation extends GetView<MainShellController> {
               const SizedBox(height: 8),
 
               _SideNavItem(
-                icon: Icons.bar_chart_outlined,
-                title: 'Reports',
+                icon: Icons.card_giftcard_outlined,
+                title: 'Deals',
                 isSelected: controller.selectedIndex == 4,
                 onTap: () => controller.changePage(4),
               ),
               const SizedBox(height: 8),
 
               _SideNavItem(
-                icon: Icons.people_outline,
-                title: 'Users',
+                icon: Icons.bar_chart_outlined,
+                title: 'Reports',
                 isSelected: controller.selectedIndex == 5,
                 onTap: () => controller.changePage(5),
               ),
               const SizedBox(height: 8),
 
               _SideNavItem(
-                icon: Icons.settings_outlined,
-                title: 'Settings',
+                icon: Icons.people_outline,
+                title: 'Users',
                 isSelected: controller.selectedIndex == 6,
                 onTap: () => controller.changePage(6),
+              ),
+              const SizedBox(height: 8),
+
+              _SideNavItem(
+                icon: Icons.settings_outlined,
+                title: 'Settings',
+                isSelected: controller.selectedIndex == 7,
+                onTap: () => controller.changePage(7),
               ),
 
               const Spacer(),

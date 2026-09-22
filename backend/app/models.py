@@ -1,9 +1,17 @@
 import uuid
 from datetime import datetime
-from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, Numeric, String, text
+from sqlalchemy import (
+    Boolean,
+    Column,
+    DateTime,
+    ForeignKey,
+    Integer,
+    Numeric,
+    String,
+    text,
+)
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
-
 from .database import Base
 
 
@@ -33,7 +41,6 @@ class Category(Base):
     id = Column(String(50), primary_key=True)
     name = Column(String(100), nullable=False)
     sort_order = Column(Integer, default=0)
-
     products = relationship("Product", back_populates="category_rel")
 
 
@@ -42,7 +49,9 @@ class Product(Base):
 
     id = Column(String(50), primary_key=True)
     name = Column(String(150), nullable=False)
-    category_id = Column(String(50), ForeignKey("categories.id"), nullable=False, index=True)
+    category_id = Column(
+        String(50), ForeignKey("categories.id"), nullable=False, index=True
+    )
     price = Column(Numeric(10, 2), nullable=False)
     description = Column(String(500), nullable=True)
     image = Column(String(255), default="assets/svg/products/burger.svg")
@@ -50,7 +59,6 @@ class Product(Base):
     is_combo = Column(Boolean, default=False)
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
-
     category_rel = relationship("Category", back_populates="products")
 
 
@@ -60,7 +68,9 @@ class Addon(Base):
     id = Column(String(50), primary_key=True)
     name = Column(String(100), nullable=False)
     price = Column(Numeric(10, 2), nullable=False, default=0.0)
-    category_id = Column(String(50), ForeignKey("categories.id"), nullable=True, index=True)
+    category_id = Column(
+        String(50), ForeignKey("categories.id"), nullable=True, index=True
+    )
     is_active = Column(Boolean, default=True)
 
 
@@ -70,7 +80,9 @@ class SizeOption(Base):
     id = Column(String(50), primary_key=True)
     name = Column(String(50), nullable=False)
     extra_price = Column(Numeric(10, 2), nullable=False, default=0.0)
-    category_id = Column(String(50), ForeignKey("categories.id"), nullable=True, index=True)
+    category_id = Column(
+        String(50), ForeignKey("categories.id"), nullable=True, index=True
+    )
     is_active = Column(Boolean, default=True)
 
 
@@ -91,8 +103,9 @@ class Order(Base):
     amount_received = Column(Numeric(10, 2), nullable=False, default=0.0)
     change_amount = Column(Numeric(10, 2), nullable=False, default=0.0)
     created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
-
-    items = relationship("OrderItem", back_populates="order_rel", cascade="all, delete-orphan")
+    items = relationship(
+        "OrderItem", back_populates="order_rel", cascade="all, delete-orphan"
+    )
 
 
 class OrderItem(Base):
@@ -110,7 +123,6 @@ class OrderItem(Base):
     total_price = Column(Numeric(10, 2), nullable=False, default=0.0)
     price = Column(Numeric(10, 2), nullable=True)
     item_total = Column(Numeric(10, 2), nullable=True)
-
     order_rel = relationship("Order", back_populates="items")
 
 
@@ -132,3 +144,34 @@ class Shift(Base):
     notes = Column(String(500), nullable=True)
     opened_at = Column(DateTime(timezone=True), default=datetime.utcnow)
     closed_at = Column(DateTime(timezone=True), nullable=True)
+
+
+class Deal(Base):
+    __tablename__ = "deals"
+
+    id = Column(String(50), primary_key=True)
+    name = Column(String(150), nullable=False)
+    description = Column(String(500), nullable=True)
+    category = Column(String(100), nullable=False, default="Meal Combos")
+    price = Column(Numeric(10, 2), nullable=False)
+    original_price = Column(Numeric(10, 2), nullable=False, default=0.0)
+    discount_amount = Column(Numeric(10, 2), nullable=False, default=0.0)
+    image = Column(String(255), default="assets/svg/products/burger.svg")
+    is_active = Column(Boolean, default=True)
+    created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
+    items = relationship(
+        "DealItem", back_populates="deal_rel", cascade="all, delete-orphan"
+    )
+
+
+class DealItem(Base):
+    __tablename__ = "deal_items"
+    id = Column(String(50), primary_key=True)
+    deal_id = Column(String(50), ForeignKey("deals.id"), nullable=False, index=True)
+    product_id = Column(String(50), nullable=True)
+    product_name = Column(String(150), nullable=False)
+    product_image = Column(String(255), default="assets/svg/products/burger.svg")
+    quantity = Column(Integer, nullable=False, default=1)
+    unit_price = Column(Numeric(10, 2), nullable=False, default=0.0)
+    total_price = Column(Numeric(10, 2), nullable=False, default=0.0)
+    deal_rel = relationship("Deal", back_populates="items")
