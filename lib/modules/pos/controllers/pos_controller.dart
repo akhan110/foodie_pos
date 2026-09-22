@@ -1,10 +1,15 @@
-import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
+import 'package:foodiepos/app/constants/storage_keys.dart';
+import 'package:foodiepos/app/utils/app_loader.dart';
 import 'package:foodiepos/data/data/dummy/dummy_model_data.dart';
+import 'package:foodiepos/modules/orders/controllers/orders_controller.dart';
 import 'package:foodiepos/modules/pos/model/cart_model.dart';
 import 'package:foodiepos/modules/pos/model/product_category.dart';
 import 'package:foodiepos/modules/pos/model/product_model.dart';
 import 'package:foodiepos/modules/pos/repository/pos_repository.dart';
+import 'package:foodiepos/modules/shell/controller/main_shell_controller.dart';
 import 'package:get/get.dart';
+import 'package:get_storage/get_storage.dart';
 
 class PosController extends GetxController {
   final IPosRepository _posRepository;
@@ -27,6 +32,13 @@ class PosController extends GetxController {
   // Reactive Cart
   final RxList<CartItemModel> cartItems = <CartItemModel>[].obs;
   final RxString orderType = 'Dine In'.obs;
+
+  // Payment View State
+  final RxBool isPaymentView = false.obs;
+  final RxString selectedPaymentMethod = 'Cash'.obs;
+  final RxDouble cashReceived = 0.0.obs;
+  final TextEditingController cashReceivedController = TextEditingController();
+  final RxBool isPlacingOrder = false.obs;
 
   @override
   void onInit() {
@@ -240,6 +252,144 @@ class PosController extends GetxController {
     cartItems.clear();
   }
 
+  @override
+  void onClose() {
+    cashReceivedController.dispose();
+    super.onClose();
+  }
+
+  void openPayment() {
+    if (cartItems.isEmpty) return;
+
+    final currentTotal = total;
+    // Suggest round cash received e.g. 2000 for 1860, or exact
+    final rounded = (currentTotal > 0 && currentTotal % 500 != 0)
+        ? ((currentTotal / 500).ceil() * 500).toDouble()
+        : currentTotal;
+
+    cashReceived.value = rounded;
+    cashReceivedController.text = rounded.round().toString();
+    selectedPaymentMethod.value = 'Cash';
+    isPaymentView.value = true;
+  }
+
+  void cancelPayment() {
+    isPaymentView.value = false;
+  }
+
+  void selectPaymentMethod(String method) {
+    selectedPaymentMethod.value = method;
+    if (method != 'Cash') {
+      cashReceived.value = total;
+      cashReceivedController.text = total.round().toString();
+    }
+  }
+
+  void setCashReceived(double amount) {
+    cashReceived.value = amount;
+    cashReceivedController.text = amount.round().toString();
+  }
+
+  void onCashInputChanged(String text) {
+    final cleaned = text.replaceAll(RegExp(r'[^0-9.]'), '');
+    final val = double.tryParse(cleaned) ?? 0.0;
+    cashReceived.value = val;
+  }
+
+  double get changeAmount =>
+      (cashReceived.value - total) > 0 ? (cashReceived.value - total) : 0.0;
+
+  Future<void> completeOrder() async {
+    if (cartItems.isEmpty) {
+      AppLoader.showInfo('Cart is empty.');
+      return;
+    }
+
+    try {
+      isPlacingOrder.value = true;
+      AppLoader.show(status: 'Completing order...');
+
+      final storage = GetStorage();
+      final cashierName = storage.read(StorageKeys.cashierName) ?? 'Alex Khan';
+
+      final String calculatedTable;
+      final typeLower = orderType.value.toLowerCase();
+      if (typeLower.contains('dine')) {
+        calculatedTable = 'Table 5';
+      } else if (typeLower.contains('delivery')) {
+        calculatedTable = 'Online Rider';
+      } else {
+        calculatedTable = 'Counter';
+      }
+
+      final payloadItems = cartItems.map((it) {
+        return {
+          'product_id': it.product.id,
+          'product_name': it.product.name,
+          'product_image': it.product.image,
+          'size': it.size.name,
+          'addons': it.extras.isNotEmpty
+              ? it.extras.map((e) => e.name).join(', ')
+              : null,
+          'quantity': it.quantity,
+          'unit_price': it.unitPrice,
+          'total_price': it.subtotal,
+        };
+      }).toList();
+
+      final orderPayload = {
+        'order_type': orderType.value,
+        'status': 'Completed',
+        'table_number': calculatedTable,
+        'cashier_name': cashierName,
+        'payment_method': selectedPaymentMethod.value,
+        'subtotal': subtotal,
+        'tax': tax,
+        'discount': 0.0,
+        'total': total,
+        'amount_received': selectedPaymentMethod.value == 'Cash'
+            ? cashReceived.value
+            : total,
+        'change_amount': selectedPaymentMethod.value == 'Cash'
+            ? changeAmount
+            : 0.0,
+        'items': payloadItems,
+      };
+
+      final response = await _posRepository.createOrder(orderPayload);
+
+      if (response.success) {
+        final orderData = response.data;
+        final orderNumber = (orderData != null && orderData['order_number'] != null)
+            ? orderData['order_number'].toString()
+            : 'New Order';
+
+        AppLoader.showSuccess('Order $orderNumber placed successfully!');
+
+        // 1. Clear cart & close payment view
+        clearCart();
+        isPaymentView.value = false;
+
+        // 2. Refresh Orders tab if loaded and switch to Orders tab
+        if (Get.isRegistered<OrdersController>()) {
+          Get.find<OrdersController>().loadOrders(showLoading: false);
+        }
+
+        if (Get.isRegistered<MainShellController>()) {
+          Get.find<MainShellController>().changePage(2);
+        }
+      } else {
+        AppLoader.showError(response.message.isNotEmpty
+            ? response.message
+            : 'Failed to place order.');
+      }
+    } catch (e) {
+      AppLoader.showError('Error placing order: $e');
+    } finally {
+      isPlacingOrder.value = false;
+    }
+  }
+
   double get subtotal =>
       cartItems.fold(0.0, (sum, item) => sum + item.subtotal);
 
@@ -247,3 +397,4 @@ class PosController extends GetxController {
 
   double get total => subtotal + tax;
 }
+

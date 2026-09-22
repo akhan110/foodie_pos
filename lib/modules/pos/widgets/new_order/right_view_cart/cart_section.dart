@@ -154,18 +154,7 @@ class CartSection extends GetView<PosController> {
               width: double.infinity,
               height: 42,
               child: ElevatedButton(
-                onPressed: controller.cartItems.isEmpty
-                    ? null
-                    : () {
-                        Get.snackbar(
-                          'Order Placed',
-                          'Ready for payment: Rs ${total.toStringAsFixed(0)}',
-                          snackPosition: SnackPosition.BOTTOM,
-                          backgroundColor: AppColors.successSurface,
-                          colorText: AppColors.success,
-                          margin: const EdgeInsets.all(16),
-                        );
-                      },
+                onPressed: controller.cartItems.isEmpty ? null : controller.openPayment,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,
                   foregroundColor: Colors.white,

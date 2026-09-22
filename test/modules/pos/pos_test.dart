@@ -1,3 +1,4 @@
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:foodiepos/models/base_response_model.dart';
 import 'package:foodiepos/modules/menu/controllers/menu_management_controller.dart';
@@ -7,6 +8,7 @@ import 'package:foodiepos/modules/pos/model/product_category.dart';
 import 'package:foodiepos/modules/pos/model/product_model.dart';
 import 'package:foodiepos/modules/pos/repository/pos_repository.dart';
 import 'package:get/get.dart';
+import 'package:get_storage/get_storage.dart';
 
 class MockPosRepository implements IPosRepository {
   @override
@@ -183,6 +185,15 @@ class MockPosRepository implements IPosRepository {
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
+  setUpAll(() async {
+    const channel = MethodChannel('plugins.flutter.io/path_provider');
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(channel, (MethodCall methodCall) async {
+      return '.';
+    });
+    await GetStorage.init();
+  });
+
   group('PosController & Products Customization & Cart Tests', () {
     late MockPosRepository mockRepo;
     late PosController controller;
@@ -289,7 +300,34 @@ void main() {
 
       controller.quickDecrementProduct(burger);
       expect(controller.getProductCartQuantity(burger.id), 0);
-      expect(controller.cartItems.isEmpty, isTrue);
+      expect(controller.cartItems.isEmpty, true);
+    });
+
+    test('6. Payment flow open, method select, cash calculation, and complete order', () async {
+      await controller.loadMenuData();
+      final prod = controller.allProducts.first;
+      controller.addToCart(prod);
+      controller.addToCart(prod);
+
+      expect(controller.cartItems.isNotEmpty, true);
+      expect(controller.isPaymentView.value, false);
+
+      controller.openPayment();
+      expect(controller.isPaymentView.value, true);
+      expect(controller.selectedPaymentMethod.value, 'Cash');
+      expect(controller.cashReceived.value >= controller.total, true);
+
+      controller.selectPaymentMethod('Card');
+      expect(controller.selectedPaymentMethod.value, 'Card');
+      expect(controller.cashReceived.value, controller.total);
+
+      controller.selectPaymentMethod('Cash');
+      controller.setCashReceived(controller.total + 140);
+      expect(controller.changeAmount, 140.0);
+
+      await controller.completeOrder();
+      expect(controller.cartItems.isEmpty, true);
+      expect(controller.isPaymentView.value, false);
     });
   });
 
