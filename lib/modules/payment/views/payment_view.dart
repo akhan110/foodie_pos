@@ -181,8 +181,8 @@ class PaymentView extends GetView<PosController> {
       onTap: onTap,
       borderRadius: BorderRadius.circular(14),
       child: Container(
-        height: 100,
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+        constraints: const BoxConstraints(minHeight: 96),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
         decoration: BoxDecoration(
           color: baseBg,
           borderRadius: BorderRadius.circular(14),
@@ -202,11 +202,14 @@ class PaymentView extends GetView<PosController> {
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
           children: [
             iconWidget,
-            const SizedBox(height: 6),
+            const SizedBox(height: 4),
             CustomTextWidget(
               title,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
               style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w700,
@@ -216,6 +219,8 @@ class PaymentView extends GetView<PosController> {
             const SizedBox(height: 2),
             CustomTextWidget(
               subtitle,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 11,
