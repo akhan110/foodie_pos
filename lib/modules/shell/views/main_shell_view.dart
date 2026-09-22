@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:foodiepos/app/widgets/app_bar_widget.dart';
 import 'package:foodiepos/app/widgets/custom_text_widget.dart';
 import 'package:foodiepos/app/widgets/unsupported_screen_view.dart';
+import 'package:foodiepos/modules/menu/views/menu_management_view.dart';
 import 'package:foodiepos/modules/pos/widgets/side_navigation.dart';
 import 'package:foodiepos/modules/shell/controller/main_shell_controller.dart';
 import 'package:get/get_state_manager/src/simple/get_state.dart';
@@ -61,9 +62,7 @@ class MainShellView extends StatelessWidget {
                       }
 
                       if (controller.selectedIndex == 3) {
-                        return const Center(
-                          child: CustomTextWidget('Menu Screen'),
-                        );
+                        return const MenuManagementView();
                       }
 
                       if (controller.selectedIndex == 4) {

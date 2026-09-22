@@ -59,6 +59,7 @@ class ProductResponse(BaseModel):
     category: str
     category_id: str
     price: float
+    description: Optional[str] = None
     image: str
     is_popular: bool = False
     is_combo: bool = False
@@ -73,6 +74,29 @@ class ProductResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class ProductCreateRequest(BaseModel):
+    id: Optional[str] = None
+    name: str
+    category_id: str
+    price: float
+    description: Optional[str] = None
+    image: Optional[str] = "assets/svg/products/burger.svg"
+    is_popular: Optional[bool] = False
+    is_combo: Optional[bool] = False
+    is_active: Optional[bool] = True
+
+
+class ProductUpdateRequest(BaseModel):
+    name: Optional[str] = None
+    category_id: Optional[str] = None
+    price: Optional[float] = None
+    description: Optional[str] = None
+    image: Optional[str] = None
+    is_popular: Optional[bool] = None
+    is_combo: Optional[bool] = None
+    is_active: Optional[bool] = None
 
 
 class AddonResponse(BaseModel):
@@ -91,6 +115,21 @@ class AddonResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class AddonCreateRequest(BaseModel):
+    id: Optional[str] = None
+    name: str
+    price: float
+    category_id: Optional[str] = None
+    is_active: Optional[bool] = True
+
+
+class AddonUpdateRequest(BaseModel):
+    name: Optional[str] = None
+    price: Optional[float] = None
+    category_id: Optional[str] = None
+    is_active: Optional[bool] = None
 
 
 class SizeOptionResponse(BaseModel):

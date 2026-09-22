@@ -7,8 +7,19 @@ import 'package:foodiepos/services/network/network.dart';
 
 abstract class IPosRepository {
   Future<BaseResponseModel<List<ProductCategoryModel>>> getCategories();
-  Future<BaseResponseModel<List<ProductModel>>> getProducts({String? categoryId});
+  Future<BaseResponseModel<List<ProductModel>>> getProducts({
+    String? categoryId,
+    bool includeInactive = false,
+  });
+  Future<BaseResponseModel<ProductModel>> createProduct(Map<String, dynamic> data);
+  Future<BaseResponseModel<ProductModel>> updateProduct(String id, Map<String, dynamic> data);
+  Future<BaseResponseModel<dynamic>> deleteProduct(String id);
+
   Future<BaseResponseModel<List<ProductExtraItem>>> getAddons({String? categoryId});
+  Future<BaseResponseModel<ProductExtraItem>> createAddon(Map<String, dynamic> data);
+  Future<BaseResponseModel<ProductExtraItem>> updateAddon(String id, Map<String, dynamic> data);
+  Future<BaseResponseModel<dynamic>> deleteAddon(String id);
+
   Future<BaseResponseModel<List<ProductSizeOption>>> getSizeOptions({String? categoryId});
   Future<BaseResponseModel<Map<String, dynamic>>> createOrder(Map<String, dynamic> orderPayload);
 }
@@ -36,10 +47,16 @@ class PosRepository implements IPosRepository {
   }
 
   @override
-  Future<BaseResponseModel<List<ProductModel>>> getProducts({String? categoryId}) async {
+  Future<BaseResponseModel<List<ProductModel>>> getProducts({
+    String? categoryId,
+    bool includeInactive = false,
+  }) async {
     final queryParams = <String, dynamic>{};
-    if (categoryId != null && categoryId.isNotEmpty) {
+    if (categoryId != null && categoryId.isNotEmpty && categoryId != 'all') {
       queryParams['category_id'] = categoryId;
+    }
+    if (includeInactive) {
+      queryParams['include_inactive'] = true;
     }
 
     return await _network.apiRequest<List<ProductModel>>(
@@ -55,6 +72,38 @@ class PosRepository implements IPosRepository {
         }
         return [];
       },
+    );
+  }
+
+  @override
+  Future<BaseResponseModel<ProductModel>> createProduct(Map<String, dynamic> data) async {
+    return await _network.apiRequest<ProductModel>(
+      requestType: ApiRequestType.post,
+      endPoint: '/api/v1/menu/products',
+      requestData: data,
+      isBearerRequired: true,
+      parser: (item) => ProductModel.fromJson(item as Map<String, dynamic>),
+    );
+  }
+
+  @override
+  Future<BaseResponseModel<ProductModel>> updateProduct(String id, Map<String, dynamic> data) async {
+    return await _network.apiRequest<ProductModel>(
+      requestType: ApiRequestType.put,
+      endPoint: '/api/v1/menu/products/$id',
+      requestData: data,
+      isBearerRequired: true,
+      parser: (item) => ProductModel.fromJson(item as Map<String, dynamic>),
+    );
+  }
+
+  @override
+  Future<BaseResponseModel<dynamic>> deleteProduct(String id) async {
+    return await _network.apiRequest<dynamic>(
+      requestType: ApiRequestType.delete,
+      endPoint: '/api/v1/menu/products/$id',
+      isBearerRequired: true,
+      parser: (data) => data,
     );
   }
 
@@ -83,6 +132,52 @@ class PosRepository implements IPosRepository {
         }
         return [];
       },
+    );
+  }
+
+  @override
+  Future<BaseResponseModel<ProductExtraItem>> createAddon(Map<String, dynamic> data) async {
+    return await _network.apiRequest<ProductExtraItem>(
+      requestType: ApiRequestType.post,
+      endPoint: '/api/v1/menu/addons',
+      requestData: data,
+      isBearerRequired: true,
+      parser: (item) {
+        final map = item as Map<String, dynamic>;
+        return ProductExtraItem(
+          id: map['id']?.toString() ?? '',
+          name: map['name']?.toString() ?? '',
+          price: (map['price'] as num?)?.toDouble() ?? 0.0,
+        );
+      },
+    );
+  }
+
+  @override
+  Future<BaseResponseModel<ProductExtraItem>> updateAddon(String id, Map<String, dynamic> data) async {
+    return await _network.apiRequest<ProductExtraItem>(
+      requestType: ApiRequestType.put,
+      endPoint: '/api/v1/menu/addons/$id',
+      requestData: data,
+      isBearerRequired: true,
+      parser: (item) {
+        final map = item as Map<String, dynamic>;
+        return ProductExtraItem(
+          id: map['id']?.toString() ?? '',
+          name: map['name']?.toString() ?? '',
+          price: (map['price'] as num?)?.toDouble() ?? 0.0,
+        );
+      },
+    );
+  }
+
+  @override
+  Future<BaseResponseModel<dynamic>> deleteAddon(String id) async {
+    return await _network.apiRequest<dynamic>(
+      requestType: ApiRequestType.delete,
+      endPoint: '/api/v1/menu/addons/$id',
+      isBearerRequired: true,
+      parser: (data) => data,
     );
   }
 

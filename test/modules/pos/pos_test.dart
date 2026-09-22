@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:foodiepos/models/base_response_model.dart';
+import 'package:foodiepos/modules/menu/controllers/menu_management_controller.dart';
 import 'package:foodiepos/modules/pos/controllers/pos_controller.dart';
 import 'package:foodiepos/modules/pos/model/cart_model.dart';
 import 'package:foodiepos/modules/pos/model/product_category.dart';
@@ -23,7 +24,10 @@ class MockPosRepository implements IPosRepository {
   }
 
   @override
-  Future<BaseResponseModel<List<ProductModel>>> getProducts({String? categoryId}) async {
+  Future<BaseResponseModel<List<ProductModel>>> getProducts({
+    String? categoryId,
+    bool includeInactive = false,
+  }) async {
     final list = [
       const ProductModel(
         id: '1',
@@ -92,6 +96,76 @@ class MockPosRepository implements IPosRepository {
         const ProductSizeOption(id: 'regular', name: 'Regular', extraPrice: 0),
         const ProductSizeOption(id: 'large', name: 'Large', extraPrice: 120),
       ],
+    );
+  }
+
+  @override
+  Future<BaseResponseModel<ProductModel>> createProduct(Map<String, dynamic> data) async {
+    final prod = ProductModel.fromJson({...data, 'id': 'prod-new'});
+    return BaseResponseModel(
+      success: true,
+      message: 'Product created',
+      statusCode: 201,
+      data: prod,
+    );
+  }
+
+  @override
+  Future<BaseResponseModel<ProductModel>> updateProduct(String id, Map<String, dynamic> data) async {
+    final prod = ProductModel.fromJson({...data, 'id': id});
+    return BaseResponseModel(
+      success: true,
+      message: 'Product updated',
+      statusCode: 200,
+      data: prod,
+    );
+  }
+
+  @override
+  Future<BaseResponseModel<dynamic>> deleteProduct(String id) async {
+    return BaseResponseModel(
+      success: true,
+      message: 'Product deleted',
+      statusCode: 200,
+      data: {'id': id},
+    );
+  }
+
+  @override
+  Future<BaseResponseModel<ProductExtraItem>> createAddon(Map<String, dynamic> data) async {
+    return BaseResponseModel(
+      success: true,
+      message: 'Addon created',
+      statusCode: 201,
+      data: ProductExtraItem(
+        id: 'add-new',
+        name: data['name']?.toString() ?? '',
+        price: (data['price'] as num?)?.toDouble() ?? 0.0,
+      ),
+    );
+  }
+
+  @override
+  Future<BaseResponseModel<ProductExtraItem>> updateAddon(String id, Map<String, dynamic> data) async {
+    return BaseResponseModel(
+      success: true,
+      message: 'Addon updated',
+      statusCode: 200,
+      data: ProductExtraItem(
+        id: id,
+        name: data['name']?.toString() ?? '',
+        price: (data['price'] as num?)?.toDouble() ?? 0.0,
+      ),
+    );
+  }
+
+  @override
+  Future<BaseResponseModel<dynamic>> deleteAddon(String id) async {
+    return BaseResponseModel(
+      success: true,
+      message: 'Addon deleted',
+      statusCode: 200,
+      data: {'id': id},
     );
   }
 
@@ -216,6 +290,63 @@ void main() {
       controller.quickDecrementProduct(burger);
       expect(controller.getProductCartQuantity(burger.id), 0);
       expect(controller.cartItems.isEmpty, isTrue);
+    });
+  });
+
+  group('MenuManagementController Tests', () {
+    late MockPosRepository mockRepo;
+    late MenuManagementController menuController;
+
+    setUp(() {
+      Get.testMode = true;
+      mockRepo = MockPosRepository();
+      menuController = MenuManagementController(repository: mockRepo);
+    });
+
+    test('1. Loads menu products and selects first product', () async {
+      await menuController.loadMenu();
+
+      expect(menuController.products.length, 3);
+      expect(menuController.selectedProduct.value, isNotNull);
+      expect(menuController.selectedProduct.value!.name, 'Classic Smash Burger');
+      expect(menuController.nameController.text, 'Classic Smash Burger');
+    });
+
+    test('2. Filters products by category count', () async {
+      await menuController.loadMenu();
+
+      expect(menuController.getCategoryCount('all'), 3);
+      expect(menuController.getCategoryCount('burgers'), 1);
+      expect(menuController.getCategoryCount('pizza'), 1);
+      expect(menuController.getCategoryCount('drinks'), 1);
+    });
+
+    test('3. Starts new product and creates it', () async {
+      await menuController.loadMenu();
+
+      menuController.startNewProduct();
+      expect(menuController.isCreatingNew.value, isTrue);
+      expect(menuController.selectedProduct.value, isNull);
+      expect(menuController.nameController.text, isEmpty);
+
+      menuController.nameController.text = 'Double Bacon Burger';
+      menuController.priceController.text = '750';
+      menuController.formCategory.value = 'burgers';
+
+      await menuController.saveProduct();
+
+      expect(menuController.products.first.name, 'Double Bacon Burger');
+      expect(menuController.isCreatingNew.value, isFalse);
+    });
+
+    test('4. Deletes product', () async {
+      await menuController.loadMenu();
+
+      final countBefore = menuController.products.length;
+      final target = menuController.products.first;
+
+      await menuController.deleteProduct(target.id);
+      expect(menuController.products.length, countBefore - 1);
     });
   });
 }

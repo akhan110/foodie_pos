@@ -44,6 +44,7 @@ class Product(Base):
     name = Column(String(150), nullable=False)
     category_id = Column(String(50), ForeignKey("categories.id"), nullable=False, index=True)
     price = Column(Numeric(10, 2), nullable=False)
+    description = Column(String(500), nullable=True)
     image = Column(String(255), default="assets/svg/products/burger.svg")
     is_popular = Column(Boolean, default=False)
     is_combo = Column(Boolean, default=False)

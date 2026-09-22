@@ -1,10 +1,20 @@
+import uuid
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
 from ..database import get_db
 from ..models import Addon, Category, Product, SizeOption
-from ..schemas import AddonResponse, CategoryResponse, ProductResponse, SizeOptionResponse
+from ..schemas import (
+    AddonCreateRequest,
+    AddonResponse,
+    AddonUpdateRequest,
+    CategoryResponse,
+    ProductCreateRequest,
+    ProductResponse,
+    ProductUpdateRequest,
+    SizeOptionResponse,
+)
 
 router = APIRouter(prefix="/api/v1/menu", tags=["Menu & Products"])
 
@@ -94,10 +104,13 @@ def get_products(
     search: Optional[str] = Query(None, description="Search product name"),
     is_popular: Optional[bool] = Query(None, description="Filter popular items"),
     is_combo: Optional[bool] = Query(None, description="Filter combo meals"),
+    include_inactive: Optional[bool] = Query(False, description="Include inactive/unavailable products"),
     db: Session = Depends(get_db),
 ):
-    """Fetch all active products with optional filters."""
-    query = db.query(Product).filter(Product.is_active == True)
+    """Fetch products with optional filters."""
+    query = db.query(Product)
+    if not include_inactive:
+        query = query.filter(Product.is_active == True)
 
     if category_id and category_id.strip() and category_id.lower() != "all":
         query = query.filter(Product.category_id == category_id.strip().lower())
@@ -121,6 +134,7 @@ def get_products(
             "category": p.category_id,
             "category_id": p.category_id,
             "price": float(p.price),
+            "description": p.description,
             "image": p.image or "assets/svg/products/burger.svg",
             "is_popular": p.is_popular,
             "is_combo": p.is_combo,
@@ -135,17 +149,132 @@ def get_products(
     }
 
 
+@router.post("/products", status_code=status.HTTP_201_CREATED)
+def create_product(req: ProductCreateRequest, db: Session = Depends(get_db)):
+    """Create a new menu product."""
+    product_id = req.id if req.id and req.id.strip() else f"prod_{uuid.uuid4().hex[:8]}"
+
+    # Verify category exists or fallback
+    cat = db.query(Category).filter(Category.id == req.category_id.lower()).first()
+    if not cat:
+        # Auto-create category if missing
+        cat = Category(id=req.category_id.lower(), name=req.category_id.capitalize())
+        db.add(cat)
+        db.commit()
+
+    new_product = Product(
+        id=product_id,
+        name=req.name,
+        category_id=req.category_id.lower(),
+        price=req.price,
+        description=req.description,
+        image=req.image or "assets/svg/products/burger.svg",
+        is_popular=req.is_popular or False,
+        is_combo=req.is_combo or False,
+        is_active=req.is_active if req.is_active is not None else True,
+    )
+    db.add(new_product)
+    db.commit()
+    db.refresh(new_product)
+
+    return {
+        "success": True,
+        "message": "Product created successfully",
+        "data": {
+            "id": new_product.id,
+            "name": new_product.name,
+            "category": new_product.category_id,
+            "category_id": new_product.category_id,
+            "price": float(new_product.price),
+            "description": new_product.description,
+            "image": new_product.image,
+            "is_popular": new_product.is_popular,
+            "is_combo": new_product.is_combo,
+            "is_active": new_product.is_active,
+        },
+        "statusCode": 201,
+    }
+
+
+@router.put("/products/{product_id}")
+def update_product(product_id: str, req: ProductUpdateRequest, db: Session = Depends(get_db)):
+    """Update an existing menu product."""
+    product = db.query(Product).filter(Product.id == product_id).first()
+    if not product:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Product with ID '{product_id}' not found.",
+        )
+
+    if req.name is not None:
+        product.name = req.name
+    if req.category_id is not None:
+        product.category_id = req.category_id.lower()
+    if req.price is not None:
+        product.price = req.price
+    if req.description is not None:
+        product.description = req.description
+    if req.image is not None:
+        product.image = req.image
+    if req.is_popular is not None:
+        product.is_popular = req.is_popular
+    if req.is_combo is not None:
+        product.is_combo = req.is_combo
+    if req.is_active is not None:
+        product.is_active = req.is_active
+
+    db.commit()
+    db.refresh(product)
+
+    return {
+        "success": True,
+        "message": "Product updated successfully",
+        "data": {
+            "id": product.id,
+            "name": product.name,
+            "category": product.category_id,
+            "category_id": product.category_id,
+            "price": float(product.price),
+            "description": product.description,
+            "image": product.image,
+            "is_popular": product.is_popular,
+            "is_combo": product.is_combo,
+            "is_active": product.is_active,
+        },
+        "statusCode": 200,
+    }
+
+
+@router.delete("/products/{product_id}")
+def delete_product(product_id: str, db: Session = Depends(get_db)):
+    """Delete a menu product (or soft deactivate)."""
+    product = db.query(Product).filter(Product.id == product_id).first()
+    if not product:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Product with ID '{product_id}' not found.",
+        )
+
+    db.delete(product)
+    db.commit()
+
+    return {
+        "success": True,
+        "message": f"Product '{product_id}' deleted successfully",
+        "data": {"id": product_id},
+        "statusCode": 200,
+    }
+
+
 @router.get("/addons")
 def get_addons(
     category_id: Optional[str] = Query(None, description="Category filter (e.g. burgers, desserts, pizza, drinks)"),
     db: Session = Depends(get_db),
 ):
     """Fetch addons / extras for a category or all active addons."""
-    # Check if DB has seeded addons
     db_addons = db.query(Addon).filter(Addon.is_active == True).all()
     
     if not db_addons:
-        # Seed default addons to DB
         for item in DEFAULT_ADDONS:
             new_addon = Addon(
                 id=item["id"],
@@ -162,7 +291,6 @@ def get_addons(
     if category_id and category_id.strip() and category_id.lower() != "all":
         clean_cat = category_id.strip().lower()
         items = [a for a in db_addons if a.category_id == clean_cat or a.category_id is None]
-        # If no specific category matched, fallback to matching by prefix or standard
         if not items:
             items = [a for a in db_addons if a.category_id == "burgers"]
 
@@ -181,6 +309,93 @@ def get_addons(
         "success": True,
         "message": f"Retrieved {len(result)} addons",
         "data": result,
+        "statusCode": 200,
+    }
+
+
+@router.post("/addons", status_code=status.HTTP_201_CREATED)
+def create_addon(req: AddonCreateRequest, db: Session = Depends(get_db)):
+    """Create a new add-on / extra."""
+    addon_id = req.id if req.id and req.id.strip() else f"add_{uuid.uuid4().hex[:8]}"
+
+    new_addon = Addon(
+        id=addon_id,
+        name=req.name,
+        price=req.price,
+        category_id=req.category_id.lower() if req.category_id else None,
+        is_active=req.is_active if req.is_active is not None else True,
+    )
+    db.add(new_addon)
+    db.commit()
+    db.refresh(new_addon)
+
+    return {
+        "success": True,
+        "message": "Addon created successfully",
+        "data": {
+            "id": new_addon.id,
+            "name": new_addon.name,
+            "price": float(new_addon.price),
+            "category_id": new_addon.category_id,
+            "is_active": new_addon.is_active,
+        },
+        "statusCode": 201,
+    }
+
+
+@router.put("/addons/{addon_id}")
+def update_addon(addon_id: str, req: AddonUpdateRequest, db: Session = Depends(get_db)):
+    """Update an existing add-on."""
+    addon = db.query(Addon).filter(Addon.id == addon_id).first()
+    if not addon:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Addon with ID '{addon_id}' not found.",
+        )
+
+    if req.name is not None:
+        addon.name = req.name
+    if req.price is not None:
+        addon.price = req.price
+    if req.category_id is not None:
+        addon.category_id = req.category_id.lower()
+    if req.is_active is not None:
+        addon.is_active = req.is_active
+
+    db.commit()
+    db.refresh(addon)
+
+    return {
+        "success": True,
+        "message": "Addon updated successfully",
+        "data": {
+            "id": addon.id,
+            "name": addon.name,
+            "price": float(addon.price),
+            "category_id": addon.category_id,
+            "is_active": addon.is_active,
+        },
+        "statusCode": 200,
+    }
+
+
+@router.delete("/addons/{addon_id}")
+def delete_addon(addon_id: str, db: Session = Depends(get_db)):
+    """Delete an add-on."""
+    addon = db.query(Addon).filter(Addon.id == addon_id).first()
+    if not addon:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Addon with ID '{addon_id}' not found.",
+        )
+
+    db.delete(addon)
+    db.commit()
+
+    return {
+        "success": True,
+        "message": f"Addon '{addon_id}' deleted successfully",
+        "data": {"id": addon_id},
         "statusCode": 200,
     }
 
@@ -237,7 +452,7 @@ def get_size_options(
 @router.get("/products/{product_id}")
 def get_product_by_id(product_id: str, db: Session = Depends(get_db)):
     """Fetch single product by its ID."""
-    p = db.query(Product).filter(Product.id == product_id, Product.is_active == True).first()
+    p = db.query(Product).filter(Product.id == product_id).first()
     if not p:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -250,6 +465,7 @@ def get_product_by_id(product_id: str, db: Session = Depends(get_db)):
         "category": p.category_id,
         "category_id": p.category_id,
         "price": float(p.price),
+        "description": p.description,
         "image": p.image or "assets/svg/products/burger.svg",
         "is_popular": p.is_popular,
         "is_combo": p.is_combo,
