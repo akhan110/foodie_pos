@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:foodiepos/app/theme/app_colors.dart';
+import 'package:foodiepos/app/widgets/app_image_widget.dart';
 import 'package:foodiepos/app/widgets/custom_text_widget.dart';
 import 'package:foodiepos/modules/pos/model/cart_model.dart';
 
@@ -67,19 +67,12 @@ class _CartItemTileState extends State<CartItemTile> {
                       : colors.surfaceContainerHighest,
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(8),
-                  child: SvgPicture.asset(
-                    widget.image,
-                    fit: BoxFit.contain,
-                    errorBuilder: (context, error, stackTrace) {
-                      return Icon(
-                        Icons.fastfood_outlined,
-                        size: 20,
-                        color: colors.onSurfaceVariant,
-                      );
-                    },
-                  ),
+                padding: const EdgeInsets.all(3),
+                child: AppImageWidget(
+                  imagePath: widget.image,
+                  fit: BoxFit.contain,
+                  borderRadius: BorderRadius.circular(6),
+                  fallbackIconSize: 20,
                 ),
               ),
 

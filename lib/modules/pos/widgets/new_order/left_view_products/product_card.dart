@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/svg.dart';
 import 'package:foodiepos/app/theme/app_colors.dart';
+import 'package:foodiepos/app/widgets/app_image_widget.dart';
 import 'package:foodiepos/app/widgets/custom_text_widget.dart';
 import 'package:foodiepos/modules/pos/controllers/pos_controller.dart';
 import 'package:foodiepos/modules/pos/model/product_model.dart';
@@ -43,17 +43,11 @@ class ProductCard extends StatelessWidget {
                     color: colors.surfaceContainerHighest,
                     borderRadius: BorderRadius.circular(10),
                   ),
-                  child: ClipRRect(
+                  child: AppImageWidget(
+                    imagePath: product.image,
+                    fit: BoxFit.contain,
                     borderRadius: BorderRadius.circular(10),
-                    child: SvgPicture.asset(
-                      product.image,
-                      fit: BoxFit.contain,
-                      errorBuilder: (context, error, stackTrace) {
-                        return const Center(
-                          child: Icon(Icons.fastfood_outlined, size: 44),
-                        );
-                      },
-                    ),
+                    fallbackIconSize: 40,
                   ),
                 ),
               ),

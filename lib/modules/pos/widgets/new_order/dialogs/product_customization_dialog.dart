@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:foodiepos/app/theme/app_colors.dart';
+import 'package:foodiepos/app/widgets/app_image_widget.dart';
 import 'package:foodiepos/app/widgets/custom_text_widget.dart';
 import 'package:foodiepos/modules/pos/controllers/pos_controller.dart';
 import 'package:foodiepos/modules/pos/model/cart_model.dart';
@@ -236,19 +236,12 @@ class _ProductCustomizationDialogState
                                 borderRadius: BorderRadius.circular(16),
                                 border: Border.all(color: cardBorder),
                               ),
-                              padding: const EdgeInsets.all(22),
-                              child: SvgPicture.asset(
-                                widget.product.image,
+                              padding: const EdgeInsets.all(16),
+                              child: AppImageWidget(
+                                imagePath: widget.product.image,
                                 fit: BoxFit.contain,
-                                errorBuilder: (context, error, stackTrace) {
-                                  return const Center(
-                                    child: Icon(
-                                      Icons.fastfood,
-                                      size: 56,
-                                      color: AppColors.primary,
-                                    ),
-                                  );
-                                },
+                                borderRadius: BorderRadius.circular(12),
+                                fallbackIconSize: 56,
                               ),
                             ),
                           ),

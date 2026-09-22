@@ -1,6 +1,8 @@
+import os
+import shutil
 import uuid
 from typing import List, Optional
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
 from sqlalchemy.orm import Session
 
 from ..database import get_db
@@ -528,5 +530,41 @@ def get_product_by_id(product_id: str, db: Session = Depends(get_db)):
         "success": True,
         "message": "Product retrieved successfully",
         "data": product_data,
+        "statusCode": 200,
+    }
+
+
+@router.post("/upload-image")
+async def upload_product_image(file: UploadFile = File(...)):
+    """Upload a real product photo (.png, .jpg, .jpeg, .webp)."""
+    allowed_extensions = {".jpg", ".jpeg", ".png", ".webp", ".svg", ".gif"}
+    _, ext = os.path.splitext(file.filename or "")
+    ext = ext.lower() if ext else ".jpg"
+
+    if ext not in allowed_extensions:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Unsupported image format '{ext}'. Allowed formats: {', '.join(allowed_extensions)}",
+        )
+
+    # Save to uploads directory
+    upload_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "uploads")
+    os.makedirs(upload_dir, exist_ok=True)
+
+    unique_filename = f"img_{uuid.uuid4().hex[:12]}{ext}"
+    file_path = os.path.join(upload_dir, unique_filename)
+
+    with open(file_path, "wb") as buffer:
+        shutil.copyfileobj(file.file, buffer)
+
+    image_url = f"/uploads/{unique_filename}"
+
+    return {
+        "success": True,
+        "message": "Image uploaded successfully",
+        "data": {
+            "image_url": image_url,
+            "filename": unique_filename,
+        },
         "statusCode": 200,
     }

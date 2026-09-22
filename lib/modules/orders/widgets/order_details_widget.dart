@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:foodiepos/app/theme/app_colors.dart';
+import 'package:foodiepos/app/widgets/app_image_widget.dart';
 import 'package:foodiepos/app/widgets/custom_text_widget.dart';
 import 'package:foodiepos/modules/orders/controllers/orders_controller.dart';
 import 'package:foodiepos/modules/orders/models/order_model.dart';
@@ -298,18 +298,16 @@ class OrderDetailsWidget extends GetView<OrdersController> {
           Container(
             width: 42,
             height: 42,
-            padding: const EdgeInsets.all(6),
+            padding: const EdgeInsets.all(4),
             decoration: BoxDecoration(
               color: colors.surfaceContainerHighest,
               borderRadius: BorderRadius.circular(10),
             ),
-            child: SvgPicture.asset(
-              item.productImage,
+            child: AppImageWidget(
+              imagePath: item.productImage,
               fit: BoxFit.contain,
-              errorBuilder: (context, error, stackTrace) => const Icon(
-                Icons.fastfood_outlined,
-                size: 20,
-              ),
+              borderRadius: BorderRadius.circular(8),
+              fallbackIconSize: 20,
             ),
           ),
 

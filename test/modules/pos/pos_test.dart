@@ -196,6 +196,20 @@ class MockPosRepository implements IPosRepository {
   }
 
   @override
+  Future<BaseResponseModel<String>> uploadImage(
+    String filePath, {
+    List<int>? bytes,
+    String? filename,
+  }) async {
+    return BaseResponseModel(
+      success: true,
+      message: 'Image uploaded',
+      statusCode: 200,
+      data: '/uploads/mock_uploaded_img.png',
+    );
+  }
+
+  @override
   Future<BaseResponseModel<Map<String, dynamic>>> createOrder(Map<String, dynamic> orderPayload) async {
     return BaseResponseModel(
       success: true,
@@ -427,6 +441,12 @@ void main() {
       // Remove Size
       await menuController.removeSizeOption('sz-new');
       expect(menuController.currentSizes.length, 2);
+    });
+
+    test('6. Image upload repository returns valid uploaded URL', () async {
+      final res = await mockRepo.uploadImage('test_path.png');
+      expect(res.success, isTrue);
+      expect(res.data, '/uploads/mock_uploaded_img.png');
     });
   });
 }

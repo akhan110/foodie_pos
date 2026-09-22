@@ -1,3 +1,4 @@
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:foodiepos/data/data/dummy/dummy_model_data.dart';
 import 'package:foodiepos/modules/pos/controllers/pos_controller.dart';
@@ -426,6 +427,55 @@ class MenuManagementController extends GetxController {
     if (c.contains('drink')) return 'assets/svg/products/drink.svg';
     if (c.contains('dessert')) return 'assets/svg/products/dessert.svg';
     return 'assets/svg/products/burger.svg';
+  }
+
+  final RxBool isUploadingImage = false.obs;
+
+  Future<void> pickAndUploadRealImage() async {
+    try {
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['jpg', 'jpeg', 'png', 'webp', 'svg'],
+        withData: true,
+      );
+
+      if (result == null || result.files.isEmpty) return;
+
+      final file = result.files.first;
+      isUploadingImage.value = true;
+      _showNotification('Uploading', 'Uploading ${file.name}...');
+
+      if (file.path != null && file.path!.isNotEmpty) {
+        final res = await _repository.uploadImage(
+          file.path!,
+          bytes: file.bytes,
+          filename: file.name,
+        );
+
+        if (res.success && res.data != null && res.data!.isNotEmpty) {
+          formImage.value = res.data!;
+          _showNotification('Success', 'Image uploaded successfully!');
+        } else {
+          // Fallback to local path for instant preview
+          formImage.value = file.path!;
+          _showNotification('Image Selected', file.name);
+        }
+      } else if (file.bytes != null) {
+        final res = await _repository.uploadImage(
+          file.name,
+          bytes: file.bytes,
+          filename: file.name,
+        );
+        if (res.success && res.data != null && res.data!.isNotEmpty) {
+          formImage.value = res.data!;
+          _showNotification('Success', 'Image uploaded successfully!');
+        }
+      }
+    } catch (e) {
+      _showNotification('Upload Error', 'Could not upload image: $e', isError: true);
+    } finally {
+      isUploadingImage.value = false;
+    }
   }
 
   String _getDefaultDescription(String cat) {

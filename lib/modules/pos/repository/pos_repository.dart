@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart' as dio;
 import 'package:foodiepos/models/base_response_model.dart';
 import 'package:foodiepos/modules/pos/model/cart_model.dart';
 import 'package:foodiepos/modules/pos/model/product_category.dart';
@@ -23,6 +24,7 @@ abstract class IPosRepository {
   Future<BaseResponseModel<List<ProductSizeOption>>> getSizeOptions({String? categoryId});
   Future<BaseResponseModel<ProductSizeOption>> createSizeOption(Map<String, dynamic> data);
   Future<BaseResponseModel<dynamic>> deleteSizeOption(String id);
+  Future<BaseResponseModel<String>> uploadImage(String filePath, {List<int>? bytes, String? filename});
   Future<BaseResponseModel<Map<String, dynamic>>> createOrder(Map<String, dynamic> orderPayload);
 }
 
@@ -236,6 +238,43 @@ class PosRepository implements IPosRepository {
       endPoint: '/api/v1/menu/sizes/$id',
       isBearerRequired: true,
       parser: (data) => data,
+    );
+  }
+
+  @override
+  Future<BaseResponseModel<String>> uploadImage(
+    String filePath, {
+    List<int>? bytes,
+    String? filename,
+  }) async {
+    final dio.FormData formData;
+    if (bytes != null && bytes.isNotEmpty) {
+      formData = dio.FormData.fromMap({
+        'file': dio.MultipartFile.fromBytes(
+          bytes,
+          filename: filename ?? 'upload.jpg',
+        ),
+      });
+    } else {
+      formData = dio.FormData.fromMap({
+        'file': await dio.MultipartFile.fromFile(
+          filePath,
+          filename: filename ?? filePath.split(RegExp(r'[\\/]')).last,
+        ),
+      });
+    }
+
+    return await _network.apiRequest<String>(
+      requestType: ApiRequestType.post,
+      endPoint: '/api/v1/menu/upload-image',
+      requestData: formData,
+      isBearerRequired: true,
+      parser: (data) {
+        if (data is Map && data['image_url'] != null) {
+          return data['image_url'].toString();
+        }
+        return '';
+      },
     );
   }
 
