@@ -7,62 +7,66 @@ import 'package:get/get.dart';
 class SignupView extends GetView<SignupController> {
   const SignupView({super.key});
 
+  static const double _mobileBreakpoint = 900;
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
-      body: LayoutBuilder(
-        builder: (context, constraints) {
-          final isSmallScreen = constraints.maxWidth < 900;
+      body: SafeArea(
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final bool isSmallScreen = constraints.maxWidth < _mobileBreakpoint;
 
-          if (isSmallScreen) {
-            return Center(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 520),
-                  child: const SignupFormCard(),
+            if (isSmallScreen) {
+              return Center(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 24,
+                  ),
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 520),
+                    child: const SignupFormCard(),
+                  ),
                 ),
-              ),
-            );
-          }
+              );
+            }
 
-          return Row(
-            children: [
-              // =========================================================
-              // LEFT SIDE (Hero / Branding Banner)
-              // =========================================================
-              const Expanded(
-                flex: 10,
-                child: SizedBox(
-                  height: double.infinity,
-                  child: SignupHeroSection(),
+            return Row(
+              children: [
+                // =====================================================
+                // LEFT SIDE - BRANDING
+                // =====================================================
+                const Expanded(
+                  flex: 10,
+                  child: SizedBox.expand(child: SignupHeroSection()),
                 ),
-              ),
 
-              // =========================================================
-              // RIGHT SIDE (Form Card)
-              // =========================================================
-              Expanded(
-                flex: 12,
-                child: Container(
-                  height: double.infinity,
-                  color: theme.scaffoldBackgroundColor,
-                  alignment: Alignment.center,
-                  padding: const EdgeInsets.all(24),
-                  child: SingleChildScrollView(
-                    child: ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 540),
-                      child: const SignupFormCard(),
+                // =====================================================
+                // RIGHT SIDE - SIGNUP FORM
+                // =====================================================
+                Expanded(
+                  flex: 12,
+                  child: Container(
+                    height: double.infinity,
+                    color: theme.scaffoldBackgroundColor,
+                    alignment: Alignment.center,
+                    padding: const EdgeInsets.all(24),
+                    child: SingleChildScrollView(
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 540),
+                        child: const SignupFormCard(),
+                      ),
                     ),
                   ),
                 ),
-              ),
-            ],
-          );
-        },
+              ],
+            );
+          },
+        ),
       ),
     );
   }

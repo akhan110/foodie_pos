@@ -127,7 +127,7 @@ class SignupHeroSection extends StatelessWidget {
 
                       // Burger vector illustration
                       SizedBox(
-                        height: 150,
+                        height: 250,
                         child: SvgPicture.asset(
                           'assets/svg/hero_burger.svg',
                           fit: BoxFit.contain,
@@ -142,7 +142,7 @@ class SignupHeroSection extends StatelessWidget {
                     angle: -0.05,
                     child: Column(
                       children: [
-                        Text(
+                        CustomTextWidget(
                           'Good Food',
                           style: TextStyle(
                             fontSize: 22,
@@ -158,7 +158,7 @@ class SignupHeroSection extends StatelessWidget {
                             ],
                           ),
                         ),
-                        Text(
+                        CustomTextWidget(
                           'Brings People Together',
                           style: TextStyle(
                             fontSize: 20,
@@ -211,10 +211,7 @@ class _FeatureRow extends StatelessWidget {
         Container(
           width: 42,
           height: 42,
-          decoration: BoxDecoration(
-            color: iconBg,
-            shape: BoxShape.circle,
-          ),
+          decoration: BoxDecoration(color: iconBg, shape: BoxShape.circle),
           alignment: Alignment.center,
           child: Icon(icon, color: iconColor, size: 20),
         ),
@@ -234,10 +231,7 @@ class _FeatureRow extends StatelessWidget {
               const SizedBox(height: 2),
               CustomTextWidget(
                 subtitle,
-                style: TextStyle(
-                  fontSize: 12,
-                  color: colors.onSurfaceVariant,
-                ),
+                style: TextStyle(fontSize: 12, color: colors.onSurfaceVariant),
               ),
             ],
           ),

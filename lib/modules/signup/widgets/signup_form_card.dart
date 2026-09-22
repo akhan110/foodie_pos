@@ -42,10 +42,7 @@ class SignupFormCard extends GetView<SignupController> {
             children: [
               CustomTextWidget(
                 'Already have an account? ',
-                style: TextStyle(
-                  fontSize: 13,
-                  color: colors.onSurfaceVariant,
-                ),
+                style: TextStyle(fontSize: 13, color: colors.onSurfaceVariant),
               ),
               InkWell(
                 onTap: () => Get.offNamed(AppRoutes.login),
@@ -307,7 +304,9 @@ class SignupFormCard extends GetView<SignupController> {
               onPressed: controller.signUpWithGoogle,
               style: OutlinedButton.styleFrom(
                 foregroundColor: colors.onSurface,
-                side: BorderSide(color: isDark ? const Color(0xFF2D333F) : theme.dividerColor),
+                side: BorderSide(
+                  color: isDark ? const Color(0xFF2D333F) : theme.dividerColor,
+                ),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10),
                 ),
@@ -319,10 +318,7 @@ class SignupFormCard extends GetView<SignupController> {
                   const SizedBox(width: 10),
                   const CustomTextWidget(
                     'Sign up with Google',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                    ),
+                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
                   ),
                 ],
               ),
@@ -357,39 +353,59 @@ class SignupFormCard extends GetView<SignupController> {
   }) {
     final theme = Theme.of(context);
     final colors = theme.colorScheme;
-    final isDark = theme.brightness == Brightness.dark;
 
-    return Container(
+    return SizedBox(
       height: 48,
-      decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF14171E) : const Color(0xFFF9FAFB),
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(
-          color: isDark ? const Color(0xFF2B313E) : const Color(0xFFE5E7EB),
+      child: TextField(
+        controller: controller,
+        obscureText: obscureText,
+        keyboardType: keyboardType,
+        style: theme.textTheme.bodyMedium?.copyWith(
+          fontSize: 14,
+          color: colors.onSurface,
         ),
-      ),
-      padding: const EdgeInsets.symmetric(horizontal: 12),
-      child: Row(
-        children: [
-          Icon(prefixIcon, size: 20, color: colors.onSurfaceVariant),
-          const SizedBox(width: 10),
-          Expanded(
-            child: TextField(
-              controller: controller,
-              obscureText: obscureText,
-              keyboardType: keyboardType,
-              style: TextStyle(fontSize: 14, color: colors.onSurface),
-              decoration: InputDecoration(
-                hintText: hintText,
-                hintStyle: TextStyle(fontSize: 13, color: colors.onSurfaceVariant.withValues(alpha: 0.7)),
-                border: InputBorder.none,
-                isDense: true,
-                contentPadding: EdgeInsets.zero,
-              ),
-            ),
+        decoration: InputDecoration(
+          hintText: hintText,
+
+          hintStyle: theme.textTheme.bodyMedium?.copyWith(
+            fontSize: 13,
+            color: colors.onSurfaceVariant.withValues(alpha: 0.7),
           ),
-          if (suffixIcon != null) suffixIcon,
-        ],
+
+          prefixIcon: Icon(
+            prefixIcon,
+            size: 20,
+            color: colors.onSurfaceVariant,
+          ),
+
+          suffixIcon: suffixIcon,
+
+          filled: true,
+
+          fillColor: colors.surfaceContainerLow,
+
+          isDense: true,
+
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 12,
+            vertical: 14,
+          ),
+
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(10),
+            borderSide: BorderSide(color: theme.dividerColor),
+          ),
+
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(10),
+            borderSide: BorderSide(color: theme.dividerColor),
+          ),
+
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(10),
+            borderSide: BorderSide(color: colors.primary, width: 1.5),
+          ),
+        ),
       ),
     );
   }
@@ -397,66 +413,103 @@ class SignupFormCard extends GetView<SignupController> {
   Widget _buildPhoneField(BuildContext context) {
     final theme = Theme.of(context);
     final colors = theme.colorScheme;
-    final isDark = theme.brightness == Brightness.dark;
 
-    return Container(
+    return SizedBox(
       height: 48,
-      decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF14171E) : const Color(0xFFF9FAFB),
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(
-          color: isDark ? const Color(0xFF2B313E) : const Color(0xFFE5E7EB),
+      child: TextField(
+        controller: controller.phoneController,
+        keyboardType: TextInputType.phone,
+        style: theme.textTheme.bodyMedium?.copyWith(
+          fontSize: 14,
+          color: colors.onSurface,
         ),
-      ),
-      padding: const EdgeInsets.symmetric(horizontal: 12),
-      child: Row(
-        children: [
-          Icon(Icons.phone_outlined, size: 20, color: colors.onSurfaceVariant),
-          const SizedBox(width: 10),
-          Expanded(
-            child: TextField(
-              controller: controller.phoneController,
-              keyboardType: TextInputType.phone,
-              style: TextStyle(fontSize: 14, color: colors.onSurface),
-              decoration: InputDecoration(
-                hintText: 'Phone Number',
-                hintStyle: TextStyle(fontSize: 13, color: colors.onSurfaceVariant.withValues(alpha: 0.7)),
-                border: InputBorder.none,
-                isDense: true,
-                contentPadding: EdgeInsets.zero,
+        decoration: InputDecoration(
+          hintText: 'Phone Number',
+
+          hintStyle: theme.textTheme.bodyMedium?.copyWith(
+            fontSize: 13,
+            color: colors.onSurfaceVariant.withValues(alpha: 0.7),
+          ),
+
+          prefixIcon: Icon(
+            Icons.phone_outlined,
+            size: 20,
+            color: colors.onSurfaceVariant,
+          ),
+
+          // COUNTRY SELECTOR
+          suffixIcon: Padding(
+            padding: const EdgeInsets.only(right: 6, top: 5, bottom: 5),
+            child: InkWell(
+              onTap: () {
+                // Country selector logic later
+              },
+              borderRadius: BorderRadius.circular(8),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10),
+                decoration: BoxDecoration(
+                  color: colors.surfaceContainerHighest,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Text('🇵🇰', style: TextStyle(fontSize: 14)),
+
+                    const SizedBox(width: 5),
+
+                    CustomTextWidget(
+                      '+92',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: colors.onSurface,
+                      ),
+                    ),
+
+                    const SizedBox(width: 2),
+
+                    Icon(
+                      Icons.keyboard_arrow_down_rounded,
+                      size: 16,
+                      color: colors.onSurfaceVariant,
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
-          // Country Selector Badge
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            decoration: BoxDecoration(
-              color: isDark ? const Color(0xFF212734) : const Color(0xFFEEF2F6),
-              borderRadius: BorderRadius.circular(6),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Text('🇵🇰', style: TextStyle(fontSize: 14)),
-                const SizedBox(width: 4),
-                CustomTextWidget(
-                  '+92',
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: colors.onSurface,
-                  ),
-                ),
-                const SizedBox(width: 2),
-                Icon(
-                  Icons.keyboard_arrow_down_rounded,
-                  size: 16,
-                  color: colors.onSurfaceVariant,
-                ),
-              ],
-            ),
+
+          suffixIconConstraints: const BoxConstraints(
+            minWidth: 0,
+            minHeight: 0,
           ),
-        ],
+
+          filled: true,
+          fillColor: colors.surfaceContainerLow,
+
+          isDense: true,
+
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 12,
+            vertical: 14,
+          ),
+
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(10),
+            borderSide: BorderSide(color: theme.dividerColor),
+          ),
+
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(10),
+            borderSide: BorderSide(color: theme.dividerColor),
+          ),
+
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(10),
+            borderSide: BorderSide(color: colors.primary, width: 1.5),
+          ),
+        ),
       ),
     );
   }
