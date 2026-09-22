@@ -1,6 +1,7 @@
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:foodiepos/models/base_response_model.dart';
+import 'package:foodiepos/modules/dashboard/controllers/dashboard_controller.dart';
 import 'package:foodiepos/modules/menu/controllers/menu_management_controller.dart';
 import 'package:foodiepos/modules/pos/controllers/pos_controller.dart';
 import 'package:foodiepos/modules/pos/model/cart_model.dart';
@@ -495,6 +496,29 @@ void main() {
       final res = await mockRepo.uploadImage('test_path.png');
       expect(res.success, isTrue);
       expect(res.data, '/uploads/mock_uploaded_img.png');
+    });
+  });
+
+  group('DashboardController Tests', () {
+    late DashboardController dashController;
+
+    setUp(() {
+      Get.testMode = true;
+      dashController = DashboardController();
+    });
+
+    test('1. Loads fallback analytics on init without throwing', () async {
+      await dashController.fetchAnalytics(showSpinner: false);
+      expect(dashController.data.value, isNotNull);
+      expect(dashController.data.value!.totalRevenue > 0, true);
+      expect(dashController.data.value!.totalOrders > 0, true);
+      expect(dashController.data.value!.topSellingItems.isNotEmpty, true);
+      expect(dashController.data.value!.hourlySales.length, 24);
+    });
+
+    test('2. Updates selected time range', () {
+      dashController.setTimeRange('This Week');
+      expect(dashController.selectedTimeRange.value, 'This Week');
     });
   });
 }

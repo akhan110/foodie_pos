@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:foodiepos/app/widgets/app_bar_widget.dart';
 import 'package:foodiepos/app/widgets/custom_text_widget.dart';
 import 'package:foodiepos/app/widgets/unsupported_screen_view.dart';
+import 'package:foodiepos/modules/dashboard/views/dashboard_view.dart';
 import 'package:foodiepos/modules/menu/views/menu_management_view.dart';
 import 'package:foodiepos/modules/orders/views/orders_view.dart';
 import 'package:foodiepos/modules/pos/controllers/pos_controller.dart';
@@ -84,9 +85,7 @@ class MainShellView extends StatelessWidget {
                         id: 'shell',
                         builder: (controller) {
                           if (controller.selectedIndex == 0) {
-                            return const Center(
-                              child: CustomTextWidget('Dashboard Screen'),
-                            );
+                            return const DashboardView();
                           }
 
                           if (controller.selectedIndex == 1) {
