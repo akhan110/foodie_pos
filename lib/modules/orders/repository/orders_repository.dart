@@ -1,18 +1,20 @@
 import 'package:foodiepos/models/base_response_model.dart';
+import 'package:foodiepos/modules/orders/models/order_model.dart';
 import 'package:foodiepos/services/network/api_request_type.dart';
 import 'package:foodiepos/services/network/network.dart';
 
 abstract class IOrdersRepository {
-  Future<BaseResponseModel<List<Map<String, dynamic>>>> getOrders({
+  Future<BaseResponseModel<List<OrderModel>>> getOrders({
     String? status,
-    int page = 1,
-    int limit = 20,
+    String? type,
+    String? search,
   });
-  Future<BaseResponseModel<Map<String, dynamic>>> getOrderById(String orderId);
-  Future<BaseResponseModel<Map<String, dynamic>>> updateOrderStatus(
-    String orderId,
-    String status,
-  );
+
+  Future<BaseResponseModel<OrderModel>> getOrderDetails(String orderId);
+
+  Future<BaseResponseModel<OrderModel>> createOrder(Map<String, dynamic> data);
+
+  Future<BaseResponseModel<OrderModel>> updateOrderStatus(String orderId, String status);
 }
 
 class OrdersRepository implements IOrdersRepository {
@@ -21,27 +23,32 @@ class OrdersRepository implements IOrdersRepository {
   OrdersRepository({Network? network}) : _network = network ?? Network.instance;
 
   @override
-  Future<BaseResponseModel<List<Map<String, dynamic>>>> getOrders({
+  Future<BaseResponseModel<List<OrderModel>>> getOrders({
     String? status,
-    int page = 1,
-    int limit = 20,
+    String? type,
+    String? search,
   }) async {
-    final queryParams = <String, dynamic>{
-      'page': page,
-      'limit': limit,
-    };
-    if (status != null && status.isNotEmpty) {
+    final queryParams = <String, dynamic>{};
+    if (status != null && status.isNotEmpty && status.toLowerCase() != 'all' && status.toLowerCase() != 'all statuses') {
       queryParams['status'] = status;
     }
+    if (type != null && type.isNotEmpty && type.toLowerCase() != 'all' && type.toLowerCase() != 'all types') {
+      queryParams['type'] = type;
+    }
+    if (search != null && search.trim().isNotEmpty) {
+      queryParams['search'] = search.trim();
+    }
 
-    return await _network.apiRequest<List<Map<String, dynamic>>>(
+    return await _network.apiRequest<List<OrderModel>>(
       requestType: ApiRequestType.get,
       endPoint: '/api/v1/orders',
-      queryParameters: queryParams,
+      queryParameters: queryParams.isNotEmpty ? queryParams : null,
       isBearerRequired: true,
       parser: (data) {
         if (data is List) {
-          return data.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+          return data
+              .map((item) => OrderModel.fromJson(Map<String, dynamic>.from(item as Map)))
+              .toList();
         }
         return [];
       },
@@ -49,26 +56,49 @@ class OrdersRepository implements IOrdersRepository {
   }
 
   @override
-  Future<BaseResponseModel<Map<String, dynamic>>> getOrderById(String orderId) async {
-    return await _network.apiRequest<Map<String, dynamic>>(
+  Future<BaseResponseModel<OrderModel>> getOrderDetails(String orderId) async {
+    return await _network.apiRequest<OrderModel>(
       requestType: ApiRequestType.get,
       endPoint: '/api/v1/orders/$orderId',
       isBearerRequired: true,
-      parser: (data) => data is Map<String, dynamic> ? data : {},
+      parser: (data) {
+        if (data is Map<String, dynamic>) {
+          return OrderModel.fromJson(data);
+        }
+        return OrderModel.fromJson(Map<String, dynamic>.from(data as Map));
+      },
     );
   }
 
   @override
-  Future<BaseResponseModel<Map<String, dynamic>>> updateOrderStatus(
-    String orderId,
-    String status,
-  ) async {
-    return await _network.apiRequest<Map<String, dynamic>>(
+  Future<BaseResponseModel<OrderModel>> createOrder(Map<String, dynamic> data) async {
+    return await _network.apiRequest<OrderModel>(
+      requestType: ApiRequestType.post,
+      endPoint: '/api/v1/orders',
+      requestData: data,
+      isBearerRequired: true,
+      parser: (data) {
+        if (data is Map<String, dynamic>) {
+          return OrderModel.fromJson(data);
+        }
+        return OrderModel.fromJson(Map<String, dynamic>.from(data as Map));
+      },
+    );
+  }
+
+  @override
+  Future<BaseResponseModel<OrderModel>> updateOrderStatus(String orderId, String status) async {
+    return await _network.apiRequest<OrderModel>(
       requestType: ApiRequestType.patch,
       endPoint: '/api/v1/orders/$orderId/status',
       requestData: {'status': status},
       isBearerRequired: true,
-      parser: (data) => data is Map<String, dynamic> ? data : {},
+      parser: (data) {
+        if (data is Map<String, dynamic>) {
+          return OrderModel.fromJson(data);
+        }
+        return OrderModel.fromJson(Map<String, dynamic>.from(data as Map));
+      },
     );
   }
 }

@@ -72,3 +72,41 @@ class SizeOption(Base):
     extra_price = Column(Numeric(10, 2), nullable=False, default=0.0)
     category_id = Column(String(50), ForeignKey("categories.id"), nullable=True, index=True)
     is_active = Column(Boolean, default=True)
+
+
+class Order(Base):
+    __tablename__ = "orders"
+
+    id = Column(String(50), primary_key=True)
+    order_number = Column(String(20), nullable=False, index=True)
+    order_type = Column(String(30), nullable=False, default="Dine in")
+    status = Column(String(30), nullable=False, default="Completed")
+    table_number = Column(String(50), nullable=True, default="Table 1")
+    cashier_name = Column(String(100), nullable=False, default="Alex Khan")
+    payment_method = Column(String(50), nullable=False, default="Cash")
+    subtotal = Column(Numeric(10, 2), nullable=False, default=0.0)
+    tax = Column(Numeric(10, 2), nullable=False, default=0.0)
+    discount = Column(Numeric(10, 2), nullable=False, default=0.0)
+    total = Column(Numeric(10, 2), nullable=False, default=0.0)
+    amount_received = Column(Numeric(10, 2), nullable=False, default=0.0)
+    change_amount = Column(Numeric(10, 2), nullable=False, default=0.0)
+    created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
+
+    items = relationship("OrderItem", back_populates="order_rel", cascade="all, delete-orphan")
+
+
+class OrderItem(Base):
+    __tablename__ = "order_items"
+
+    id = Column(String(50), primary_key=True)
+    order_id = Column(String(50), ForeignKey("orders.id"), nullable=False, index=True)
+    product_id = Column(String(50), nullable=True)
+    product_name = Column(String(150), nullable=False)
+    product_image = Column(String(255), default="assets/svg/products/burger.svg")
+    size = Column(String(50), default="Regular")
+    addons = Column(String(255), nullable=True)
+    quantity = Column(Integer, nullable=False, default=1)
+    unit_price = Column(Numeric(10, 2), nullable=False, default=0.0)
+    total_price = Column(Numeric(10, 2), nullable=False, default=0.0)
+
+    order_rel = relationship("Order", back_populates="items")

@@ -150,8 +150,94 @@ class SizeOptionResponse(BaseModel):
         from_attributes = True
 
 
+class OrderItemResponse(BaseModel):
+    id: str
+    order_id: str
+    product_id: Optional[str] = None
+    product_name: str
+    product_image: Optional[str] = "assets/svg/products/burger.svg"
+    size: Optional[str] = "Regular"
+    addons: Optional[str] = None
+    quantity: int = 1
+    unit_price: float
+    total_price: float
+
+    @field_validator("unit_price", "total_price", mode="before")
+    @classmethod
+    def convert_decimal_to_float(cls, v: Any) -> float:
+        if isinstance(v, Decimal):
+            return float(v)
+        return float(v)
+
+    class Config:
+        from_attributes = True
+
+
+class OrderResponse(BaseModel):
+    id: str
+    order_number: str
+    order_type: str
+    status: str
+    table_number: Optional[str] = None
+    cashier_name: str
+    payment_method: str
+    subtotal: float
+    tax: float
+    discount: float
+    total: float
+    amount_received: float
+    change_amount: float
+    created_at: Any
+    items_count: int = 0
+    items: List[OrderItemResponse] = []
+
+    @field_validator("subtotal", "tax", "discount", "total", "amount_received", "change_amount", mode="before")
+    @classmethod
+    def convert_decimal_to_float(cls, v: Any) -> float:
+        if isinstance(v, Decimal):
+            return float(v)
+        return float(v)
+
+    class Config:
+        from_attributes = True
+
+
+class OrderItemCreateRequest(BaseModel):
+    id: Optional[str] = None
+    product_id: Optional[str] = None
+    product_name: str
+    product_image: Optional[str] = "assets/svg/products/burger.svg"
+    size: Optional[str] = "Regular"
+    addons: Optional[str] = None
+    quantity: int = 1
+    unit_price: float
+    total_price: float
+
+
+class OrderCreateRequest(BaseModel):
+    id: Optional[str] = None
+    order_number: Optional[str] = None
+    order_type: Optional[str] = "Dine in"
+    status: Optional[str] = "Completed"
+    table_number: Optional[str] = "Table 1"
+    cashier_name: Optional[str] = "Alex Khan"
+    payment_method: Optional[str] = "Cash"
+    subtotal: float
+    tax: Optional[float] = 0.0
+    discount: Optional[float] = 0.0
+    total: float
+    amount_received: Optional[float] = None
+    change_amount: Optional[float] = 0.0
+    items: List[OrderItemCreateRequest] = []
+
+
+class OrderStatusUpdateRequest(BaseModel):
+    status: str
+
+
 class ApiResponse(BaseModel):
     success: bool
     message: str
     data: Optional[Any] = None
     statusCode: int = 200
+

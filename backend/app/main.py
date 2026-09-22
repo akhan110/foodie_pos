@@ -1,11 +1,12 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from .database import Base, engine
-from .routers import auth, menu
+from .database import Base, engine, init_db_schema
+from .routers import auth, menu, orders
 
-# Automatically create tables if not present
+# Automatically create tables and migrate columns if not present
 Base.metadata.create_all(bind=engine)
+init_db_schema()
 
 app = FastAPI(
     title="BiteFlow POS API",
@@ -25,6 +26,7 @@ app.add_middleware(
 # Register routers
 app.include_router(auth.router)
 app.include_router(menu.router)
+app.include_router(orders.router)
 
 
 @app.get("/")
