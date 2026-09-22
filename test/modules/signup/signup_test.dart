@@ -91,7 +91,7 @@ void main() {
       controller = SignupController(loginRepository: mockRepo);
     });
 
-    test('1. Validation fails if required fields are empty', () async {
+    test('1. Validation fails if required fields are empty or PIN is invalid', () async {
       await controller.createAccount();
       expect(controller.errorMessage.value, contains('Please enter your full name'));
 
@@ -101,18 +101,18 @@ void main() {
 
       controller.storeNameController.text = 'BiteFlow Central';
       await controller.createAccount();
-      expect(controller.errorMessage.value, contains('valid email'));
+      expect(controller.errorMessage.value, contains('PIN must be exactly 4 digits'));
 
-      controller.emailController.text = 'alex@example.com';
+      controller.pinController.text = '123';
       await controller.createAccount();
-      expect(controller.errorMessage.value, contains('at least 6 characters'));
+      expect(controller.errorMessage.value, contains('PIN must be exactly 4 digits'));
 
-      controller.passwordController.text = 'password123';
-      controller.confirmPasswordController.text = 'different_pass';
+      controller.pinController.text = '1234';
+      controller.confirmPinController.text = '4321';
       await controller.createAccount();
-      expect(controller.errorMessage.value, contains('Passwords do not match'));
+      expect(controller.errorMessage.value, contains('PINs do not match'));
 
-      controller.confirmPasswordController.text = 'password123';
+      controller.confirmPinController.text = '1234';
       await controller.createAccount();
       expect(controller.errorMessage.value, contains('agree to the Terms'));
     });
@@ -122,10 +122,8 @@ void main() {
 
       controller.fullNameController.text = 'Alex Khan';
       controller.storeNameController.text = 'BiteFlow Central';
-      controller.emailController.text = 'alex@foodiepos.com';
-      controller.phoneController.text = '3001234567';
-      controller.passwordController.text = 'securePass123';
-      controller.confirmPasswordController.text = 'securePass123';
+      controller.pinController.text = '1234';
+      controller.confirmPinController.text = '1234';
       controller.toggleAgreeToTerms(true);
 
       await controller.createAccount();

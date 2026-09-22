@@ -15,14 +15,11 @@ class SignupController extends GetxController {
 
   final fullNameController = TextEditingController();
   final storeNameController = TextEditingController();
-  final emailController = TextEditingController();
-  final phoneController = TextEditingController();
-  final passwordController = TextEditingController();
-  final confirmPasswordController = TextEditingController();
+  final pinController = TextEditingController();
+  final confirmPinController = TextEditingController();
 
-  final RxString selectedCountryCode = '+92'.obs;
-  final RxBool isPasswordVisible = false.obs;
-  final RxBool isConfirmPasswordVisible = false.obs;
+  final RxBool isPinVisible = false.obs;
+  final RxBool isConfirmPinVisible = false.obs;
   final RxBool agreeToTerms = false.obs;
   final RxBool isLoading = false.obs;
   final RxString errorMessage = ''.obs;
@@ -31,19 +28,17 @@ class SignupController extends GetxController {
   void onClose() {
     fullNameController.dispose();
     storeNameController.dispose();
-    emailController.dispose();
-    phoneController.dispose();
-    passwordController.dispose();
-    confirmPasswordController.dispose();
+    pinController.dispose();
+    confirmPinController.dispose();
     super.onClose();
   }
 
-  void togglePasswordVisibility() {
-    isPasswordVisible.value = !isPasswordVisible.value;
+  void togglePinVisibility() {
+    isPinVisible.value = !isPinVisible.value;
   }
 
-  void toggleConfirmPasswordVisibility() {
-    isConfirmPasswordVisible.value = !isConfirmPasswordVisible.value;
+  void toggleConfirmPinVisibility() {
+    isConfirmPinVisible.value = !isConfirmPinVisible.value;
   }
 
   void toggleAgreeToTerms(bool? value) {
@@ -54,10 +49,8 @@ class SignupController extends GetxController {
   Future<void> createAccount() async {
     final name = fullNameController.text.trim();
     final storeName = storeNameController.text.trim();
-    final email = emailController.text.trim();
-    final phone = phoneController.text.trim();
-    final password = passwordController.text;
-    final confirmPassword = confirmPasswordController.text;
+    final pin = pinController.text.trim();
+    final confirmPin = confirmPinController.text.trim();
 
     errorMessage.value = '';
 
@@ -69,16 +62,12 @@ class SignupController extends GetxController {
       errorMessage.value = 'Please enter your restaurant/store name';
       return;
     }
-    if (email.isEmpty || !GetUtils.isEmail(email)) {
-      errorMessage.value = 'Please enter a valid email address';
+    if (pin.isEmpty || pin.length != 4 || !RegExp(r'^[0-9]{4}$').hasMatch(pin)) {
+      errorMessage.value = 'PIN must be exactly 4 digits';
       return;
     }
-    if (password.isEmpty || password.length < 6) {
-      errorMessage.value = 'Password must be at least 6 characters long';
-      return;
-    }
-    if (password != confirmPassword) {
-      errorMessage.value = 'Passwords do not match';
+    if (pin != confirmPin) {
+      errorMessage.value = 'PINs do not match';
       return;
     }
     if (!agreeToTerms.value) {
@@ -90,14 +79,9 @@ class SignupController extends GetxController {
       isLoading.value = true;
       AppLoader.show(status: 'Creating account...');
 
-      final fullPhone = phone.isNotEmpty ? '${selectedCountryCode.value} $phone' : null;
-
       final response = await _loginRepository.signUp(
         name: name,
-        pin: '1234', // Default quick POS PIN
-        email: email,
-        password: password,
-        phone: fullPhone,
+        pin: pin,
         role: 'manager',
         storeName: storeName,
       );
@@ -133,9 +117,5 @@ class SignupController extends GetxController {
     } finally {
       isLoading.value = false;
     }
-  }
-
-  void signUpWithGoogle() {
-    AppLoader.showInfo('Google Sign-In is coming soon!');
   }
 }

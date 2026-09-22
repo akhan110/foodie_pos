@@ -58,12 +58,24 @@ def pin_login(payload: PinLoginRequest, db: Session = Depends(get_db)):
 @router.post("/signup")
 def signup(payload: SignUpRequest, db: Session = Depends(get_db)):
     """Create a new cashier or manager account."""
-    email_clean = payload.email.strip().lower()
-    existing = db.query(Cashier).filter(Cashier.email == email_clean).first()
-    if existing:
+    email_clean = (
+        payload.email.strip().lower()
+        if payload.email and payload.email.strip()
+        else None
+    )
+    if email_clean:
+        existing = db.query(Cashier).filter(Cashier.email == email_clean).first()
+        if existing:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="An account with this email already exists.",
+            )
+
+    pin_clean = (payload.pin or "1234").strip()
+    if not pin_clean:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="An account with this email already exists.",
+            detail="A 4-digit PIN is required.",
         )
 
     password_hash = (
@@ -75,7 +87,7 @@ def signup(payload: SignUpRequest, db: Session = Depends(get_db)):
         email=email_clean,
         password_hash=password_hash,
         phone=payload.phone.strip() if payload.phone else None,
-        pin=(payload.pin or "1234").strip(),
+        pin=pin_clean,
         role=payload.role or "manager",
         store_name=payload.store_name.strip() or "BiteFlow Store #01",
         is_active=True,

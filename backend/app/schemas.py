@@ -16,10 +16,10 @@ class EmailLoginRequest(BaseModel):
 class SignUpRequest(BaseModel):
     name: str
     store_name: str
-    email: str
+    pin: str
+    email: Optional[str] = None
     phone: Optional[str] = None
-    password: str
-    pin: Optional[str] = "1234"
+    password: Optional[str] = None
     role: Optional[str] = "manager"
 
 
