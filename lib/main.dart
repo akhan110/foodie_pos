@@ -22,7 +22,7 @@ Future<void> main() async {
     config: NetworkConfig(
       baseUrl: const String.fromEnvironment(
         'API_BASE_URL',
-        defaultValue: 'http://127.0.0.1:8000',
+        defaultValue: 'https://foodiepos-five.vercel.app',
       ),
       tokenProvider: () async {
         return storage.read<String>(StorageKeys.token);
