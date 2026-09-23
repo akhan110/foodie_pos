@@ -212,5 +212,13 @@ void main() {
       expect(GetStorage().read('cashier_name'), 'Akhan');
       expect(GetStorage().read('cashier_store'), 'Kucks');
     });
+
+    test('6. KDS mode toggle switches observable value', () {
+      expect(controller.isKdsMode.value, isFalse);
+      controller.isKdsMode.value = true;
+      expect(controller.isKdsMode.value, isTrue);
+      controller.isKdsMode.toggle();
+      expect(controller.isKdsMode.value, isFalse);
+    });
   });
 }

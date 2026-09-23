@@ -22,6 +22,7 @@ class LoginController extends GetxController {
   final RxList<CashierModel> cashiers = <CashierModel>[].obs;
   final Rx<CashierModel?> selectedCashier = Rx<CashierModel?>(null);
   final RxBool isLoadingCashiers = false.obs;
+  final RxBool isKdsMode = false.obs;
 
   @override
   void onInit() {
@@ -132,16 +133,20 @@ class LoginController extends GetxController {
         pin.value = '';
         errorMessage.value = '';
 
-        // Navigate to POS
-        await Get.offNamed(AppRoutes.pos);
+        // Navigate to KDS or POS counter
+        if (isKdsMode.value) {
+          await Get.offNamed(AppRoutes.kds);
+        } else {
+          await Get.offNamed(AppRoutes.pos);
 
-        // Prompt Open Shift dialog if no shift is currently open
-        Future.delayed(const Duration(milliseconds: 350), () {
-          if (!Get.isRegistered<ShiftController>()) {
-            Get.put(ShiftController());
-          }
-          Get.find<ShiftController>().checkAndPromptOpenShift();
-        });
+          // Prompt Open Shift dialog if no shift is currently open
+          Future.delayed(const Duration(milliseconds: 350), () {
+            if (!Get.isRegistered<ShiftController>()) {
+              Get.put(ShiftController());
+            }
+            Get.find<ShiftController>().checkAndPromptOpenShift();
+          });
+        }
       } else {
         final msg = response.message.isNotEmpty
             ? response.message

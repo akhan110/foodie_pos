@@ -283,7 +283,49 @@ class LoginView extends GetView<LoginController> {
             );
           }),
 
-          const SizedBox(height: 12),
+          // KDS MODE CHECKBOX
+          Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: InkWell(
+              onTap: () => controller.isKdsMode.toggle(),
+              borderRadius: BorderRadius.circular(8),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Obx(
+                      () => SizedBox(
+                        height: 22,
+                        width: 22,
+                        child: Checkbox(
+                          value: controller.isKdsMode.value,
+                          onChanged: (val) => controller.isKdsMode.value = val ?? false,
+                          activeColor: AppColors.primary,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Flexible(
+                      child: CustomTextWidget(
+                        'Kitchen Display System (KDS Mode)',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w600,
+                          color: colors.onSurface,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 6),
 
           // PIN INDICATOR DOTS
           Obx(

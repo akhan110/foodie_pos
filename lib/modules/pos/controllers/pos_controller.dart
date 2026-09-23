@@ -617,7 +617,7 @@ class PosController extends GetxController {
 
       final orderPayload = {
         'order_type': orderType.value,
-        'status': 'Completed',
+        'status': 'New',
         'table_number': calculatedTable,
         'cashier_name': cashierName,
         'payment_method': paymentMethodStr,

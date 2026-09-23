@@ -1,3 +1,5 @@
+import 'package:foodiepos/modules/kds/bindings/kds_binding.dart';
+import 'package:foodiepos/modules/kds/views/kds_view.dart';
 import 'package:foodiepos/modules/login/bindings/login_bindings.dart';
 import 'package:foodiepos/modules/login/views/login_view.dart';
 import 'package:foodiepos/modules/pos/bindings/pos_binding.dart';
@@ -23,6 +25,11 @@ class AppPages {
       name: AppRoutes.pos,
       page: () => const PosView(),
       binding: PosBinding(),
+    ),
+    GetPage(
+      name: AppRoutes.kds,
+      page: () => const KdsView(),
+      binding: KdsBinding(),
     ),
   ];
 }
