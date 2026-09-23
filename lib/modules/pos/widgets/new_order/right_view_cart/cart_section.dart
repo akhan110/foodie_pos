@@ -32,14 +32,19 @@ class CartSection extends GetView<PosController> {
                 Expanded(
                   child: Row(
                     children: [
-                      CustomTextWidget(
-                        'Current Order',
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w800,
-                          color: colors.onSurface,
+                      Flexible(
+                        child: CustomTextWidget(
+                          'Current Order',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w800,
+                            color: colors.onSurface,
+                            fontSize: 15,
+                          ),
                         ),
                       ),
-                      const SizedBox(width: 8),
+                      const SizedBox(width: 6),
 
                       // PARKED ORDERS BADGE
                       Obx(() {
@@ -47,23 +52,23 @@ class CartSection extends GetView<PosController> {
                         if (count == 0) return const SizedBox.shrink();
                         return InkWell(
                           onTap: () => ParkedOrdersDialog.show(context, controller),
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(10),
                           child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                             decoration: BoxDecoration(
                               color: AppColors.primary,
-                              borderRadius: BorderRadius.circular(12),
+                              borderRadius: BorderRadius.circular(10),
                             ),
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                const Icon(Icons.pause, size: 12, color: Colors.white),
+                                const Icon(Icons.pause, size: 11, color: Colors.white),
                                 const SizedBox(width: 2),
                                 Text(
                                   'Parked: $count',
                                   style: const TextStyle(
                                     color: Colors.white,
-                                    fontSize: 11,
+                                    fontSize: 10.5,
                                     fontWeight: FontWeight.bold,
                                   ),
                                 ),
@@ -75,22 +80,11 @@ class CartSection extends GetView<PosController> {
                     ],
                   ),
                 ),
+                const SizedBox(width: 4),
 
                 // HOLD / PARK ORDER BUTTON
                 Obx(() {
                   if (controller.cartItems.isEmpty) {
-                    if (controller.parkedOrders.isNotEmpty) {
-                      return TextButton.icon(
-                        onPressed: () => ParkedOrdersDialog.show(context, controller),
-                        icon: const Icon(Icons.pause_circle_outline, size: 14),
-                        label: const Text('Parked', style: TextStyle(fontSize: 11)),
-                        style: TextButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(horizontal: 6),
-                          minimumSize: Size.zero,
-                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                        ),
-                      );
-                    }
                     return const SizedBox.shrink();
                   }
 
@@ -98,39 +92,43 @@ class CartSection extends GetView<PosController> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       // Hold Order Button
-                      TextButton.icon(
-                        onPressed: () => controller.parkCurrentOrder(),
-                        icon: const Icon(Icons.pause_circle_filled, size: 14, color: AppColors.primary),
-                        label: const Text(
-                          'Hold',
-                          style: TextStyle(
-                            color: AppColors.primary,
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
+                      InkWell(
+                        onTap: () => controller.parkCurrentOrder(),
+                        borderRadius: BorderRadius.circular(6),
+                        child: const Padding(
+                          padding: EdgeInsets.symmetric(horizontal: 5, vertical: 3),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.pause_circle_filled, size: 14, color: AppColors.primary),
+                              SizedBox(width: 2),
+                              Text(
+                                'Hold',
+                                style: TextStyle(
+                                  color: AppColors.primary,
+                                  fontSize: 11.5,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
-                        style: TextButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(horizontal: 6),
-                          minimumSize: Size.zero,
-                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                        ),
                       ),
-                      const SizedBox(width: 4),
+                      const SizedBox(width: 2),
 
                       // Clear All Button
-                      TextButton(
-                        onPressed: controller.clearCart,
-                        style: TextButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(horizontal: 6),
-                          minimumSize: Size.zero,
-                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                        ),
-                        child: const CustomTextWidget(
-                          'Clear',
-                          style: TextStyle(
-                            color: AppColors.error,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
+                      InkWell(
+                        onTap: controller.clearCart,
+                        borderRadius: BorderRadius.circular(6),
+                        child: const Padding(
+                          padding: EdgeInsets.symmetric(horizontal: 5, vertical: 3),
+                          child: CustomTextWidget(
+                            'Clear',
+                            style: TextStyle(
+                              color: AppColors.error,
+                              fontSize: 11.5,
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
                         ),
                       ),
