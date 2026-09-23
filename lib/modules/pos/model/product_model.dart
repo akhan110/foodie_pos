@@ -6,6 +6,8 @@ class ProductModel {
     this.sku,
     required this.name,
     required this.category,
+    this.categoryId,
+    this.categoryName,
     required this.price,
     required this.image,
     this.description,
@@ -19,6 +21,8 @@ class ProductModel {
   final String? sku;
   final String name;
   final ProductCategory category;
+  final String? categoryId;
+  final String? categoryName;
   final double price;
   final String image;
   final String? description;
@@ -27,7 +31,7 @@ class ProductModel {
   final bool isKitchen;
   final bool isActive;
 
-  String get effectiveSku => sku ?? '${category.name.substring(0, 3).toUpperCase()}-${id.length >= 3 ? id.substring(id.length - 3).toUpperCase() : "001"}';
+  String get effectiveSku => sku ?? '${category.name.substring(0, category.name.length >= 3 ? 3 : category.name.length).toUpperCase()}-${id.length >= 3 ? id.substring(id.length - 3).toUpperCase() : "001"}';
 
   factory ProductModel.fromJson(Map<String, dynamic> json) {
     ProductCategory parseCategory(String? cat) {
@@ -38,14 +42,18 @@ class ProductModel {
       );
     }
 
-    final catEnum = parseCategory(json['category']?.toString() ?? json['category_name']?.toString() ?? json['category_id']?.toString());
+    final rawCatId = json['category_id']?.toString() ?? json['categoryId']?.toString();
+    final rawCatName = json['category_name']?.toString() ?? json['category']?.toString();
+    final catEnum = parseCategory(rawCatName ?? rawCatId);
     final rawId = json['id']?.toString() ?? '';
 
     return ProductModel(
       id: rawId,
-      sku: json['sku']?.toString() ?? '${catEnum.name.substring(0, 3).toUpperCase()}-${rawId.length >= 3 ? rawId.substring(rawId.length - 3).toUpperCase() : "001"}',
+      sku: json['sku']?.toString() ?? '${catEnum.name.substring(0, catEnum.name.length >= 3 ? 3 : catEnum.name.length).toUpperCase()}-${rawId.length >= 3 ? rawId.substring(rawId.length - 3).toUpperCase() : "001"}',
       name: json['name']?.toString() ?? '',
       category: catEnum,
+      categoryId: rawCatId ?? catEnum.name,
+      categoryName: rawCatName ?? catEnum.name,
       price: (json['price'] as num?)?.toDouble() ?? 0.0,
       description: json['description']?.toString(),
       image: json['image']?.toString() ?? 'assets/svg/products/burger.svg',
@@ -61,8 +69,8 @@ class ProductModel {
       'id': id,
       'sku': sku ?? effectiveSku,
       'name': name,
-      'category_id': category.name,
-      'category': category.name,
+      'category_id': categoryId ?? category.name,
+      'category': categoryName ?? category.name,
       'price': price,
       'description': description,
       'image': image,
@@ -78,6 +86,8 @@ class ProductModel {
     String? sku,
     String? name,
     ProductCategory? category,
+    String? categoryId,
+    String? categoryName,
     double? price,
     String? image,
     String? description,
@@ -91,6 +101,8 @@ class ProductModel {
       sku: sku ?? this.sku,
       name: name ?? this.name,
       category: category ?? this.category,
+      categoryId: categoryId ?? this.categoryId,
+      categoryName: categoryName ?? this.categoryName,
       price: price ?? this.price,
       image: image ?? this.image,
       description: description ?? this.description,

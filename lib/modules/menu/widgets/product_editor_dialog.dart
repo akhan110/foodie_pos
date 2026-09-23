@@ -4,6 +4,7 @@ import 'package:foodiepos/app/theme/app_colors.dart';
 import 'package:foodiepos/app/widgets/app_image_widget.dart';
 import 'package:foodiepos/app/widgets/custom_text_widget.dart';
 import 'package:foodiepos/modules/menu/controllers/menu_management_controller.dart';
+import 'package:foodiepos/modules/pos/model/product_category.dart';
 import 'package:foodiepos/modules/pos/model/product_model.dart';
 import 'package:get/get.dart';
 
@@ -16,13 +17,20 @@ class ProductEditorDialog extends StatelessWidget {
     BuildContext context, {
     ProductModel? product,
     bool isNew = false,
-  }) {
-    final ctrl = Get.find<MenuManagementController>();
+  }) async {
+    final ctrl = Get.isRegistered<MenuManagementController>()
+        ? Get.find<MenuManagementController>()
+        : Get.put(MenuManagementController());
+    if (ctrl.categories.isEmpty) {
+      await ctrl.loadMenu();
+    }
     if (isNew || product == null) {
       ctrl.startNewProduct();
     } else {
       ctrl.selectProduct(product);
     }
+
+    if (!context.mounted) return;
 
     return showDialog(
       context: context,
@@ -328,45 +336,81 @@ class ProductEditorDialog extends StatelessWidget {
                                   children: [
                                     _buildFieldLabel(context, 'CATEGORY'),
                                     const SizedBox(height: 6),
-                                    Container(
-                                      height: 44,
-                                      padding: const EdgeInsets.symmetric(horizontal: 14),
-                                      decoration: BoxDecoration(
-                                        color: isDark
-                                            ? const Color(0xFF141822)
-                                            : const Color(0xFFF3F4F6),
-                                        borderRadius: BorderRadius.circular(10),
-                                        border: Border.all(
-                                          color: isDark
-                                              ? const Color(0xFF2D333F)
-                                              : const Color(0xFFE5E7EB),
-                                        ),
-                                      ),
-                                      child: DropdownButtonHideUnderline(
-                                        child: DropdownButton<String>(
-                                          value: controller.formCategory.value,
-                                          isExpanded: true,
-                                          dropdownColor: isDark
-                                              ? const Color(0xFF1E222B)
-                                              : Colors.white,
-                                          style: TextStyle(
-                                            fontSize: 13,
-                                            fontWeight: FontWeight.w600,
-                                            color: colors.onSurface,
+                                    Builder(
+                                      builder: (context) {
+                                        // Fallback default categories if not yet fetched
+                                        final catList = controller.categories.isNotEmpty
+                                            ? controller.categories.toList()
+                                            : [
+                                                ProductCategoryModel(id: 'burgers', name: 'Burgers', slug: 'burgers'),
+                                                ProductCategoryModel(id: 'chicken', name: 'Chicken', slug: 'chicken'),
+                                                ProductCategoryModel(id: 'pizza', name: 'Pizza', slug: 'pizza'),
+                                                ProductCategoryModel(id: 'sides', name: 'Sides', slug: 'sides'),
+                                                ProductCategoryModel(id: 'drinks', name: 'Drinks', slug: 'drinks'),
+                                                ProductCategoryModel(id: 'desserts', name: 'Desserts', slug: 'desserts'),
+                                              ];
+
+                                        final currentVal = controller.formCategory.value;
+                                        final matchedCat = catList.firstWhereOrNull(
+                                          (c) => c.id.toLowerCase() == currentVal.toLowerCase() ||
+                                                 c.name.toLowerCase() == currentVal.toLowerCase() ||
+                                                 c.slug.toLowerCase() == currentVal.toLowerCase(),
+                                        );
+                                        final safeValue = matchedCat?.id ?? catList.first.id;
+
+                                        return Container(
+                                          height: 44,
+                                          padding: const EdgeInsets.symmetric(horizontal: 14),
+                                          decoration: BoxDecoration(
+                                            color: isDark
+                                                ? const Color(0xFF141822)
+                                                : const Color(0xFFF3F4F6),
+                                            borderRadius: BorderRadius.circular(10),
+                                            border: Border.all(
+                                              color: isDark
+                                                  ? const Color(0xFF2D333F)
+                                                  : const Color(0xFFE5E7EB),
+                                            ),
                                           ),
-                                          onChanged: (val) {
-                                            if (val != null) {
-                                              controller.onCategoryFormChanged(val);
-                                            }
-                                          },
-                                          items: controller.categories.map((c) {
-                                            return DropdownMenuItem<String>(
-                                              value: c.id,
-                                              child: Text(c.name),
-                                            );
-                                          }).toList(),
-                                        ),
-                                      ),
+                                          child: DropdownButtonHideUnderline(
+                                            child: DropdownButton<String>(
+                                              value: safeValue,
+                                              isExpanded: true,
+                                              icon: const Icon(
+                                                Icons.keyboard_arrow_down_rounded,
+                                                size: 20,
+                                                color: AppColors.primary,
+                                              ),
+                                              dropdownColor: isDark
+                                                  ? const Color(0xFF1E222B)
+                                                  : Colors.white,
+                                              style: TextStyle(
+                                                fontSize: 13,
+                                                fontWeight: FontWeight.w600,
+                                                color: colors.onSurface,
+                                              ),
+                                              onChanged: (val) {
+                                                if (val != null) {
+                                                  controller.onCategoryFormChanged(val);
+                                                }
+                                              },
+                                              items: catList.map((c) {
+                                                return DropdownMenuItem<String>(
+                                                  value: c.id,
+                                                  child: Text(
+                                                    c.name,
+                                                    style: TextStyle(
+                                                      fontSize: 13,
+                                                      fontWeight: FontWeight.w600,
+                                                      color: colors.onSurface,
+                                                    ),
+                                                  ),
+                                                );
+                                              }).toList(),
+                                            ),
+                                          ),
+                                        );
+                                      },
                                     ),
                                   ],
                                 ),

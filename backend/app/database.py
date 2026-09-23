@@ -96,6 +96,13 @@ def init_db_schema():
                         opened_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
                         closed_at TIMESTAMPTZ
                     );
+                    ALTER TABLE shifts ADD COLUMN IF NOT EXISTS notes VARCHAR(500);
+
+                    ALTER TABLE products ADD COLUMN IF NOT EXISTS sku VARCHAR(50);
+                    ALTER TABLE products ADD COLUMN IF NOT EXISTS is_popular BOOLEAN DEFAULT FALSE;
+                    ALTER TABLE products ADD COLUMN IF NOT EXISTS is_combo BOOLEAN DEFAULT FALSE;
+                    ALTER TABLE products ADD COLUMN IF NOT EXISTS is_kitchen BOOLEAN DEFAULT TRUE;
+                    ALTER TABLE products ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT TRUE;
                     """
                 )
             )

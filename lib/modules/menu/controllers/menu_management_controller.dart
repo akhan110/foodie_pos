@@ -179,13 +179,25 @@ class MenuManagementController extends GetxController {
     skuController.text = product.sku ?? product.effectiveSku;
     priceController.text = product.price.toStringAsFixed(0);
     descriptionController.text = product.description ?? _getDefaultDescription(product.category.name);
-    formCategory.value = product.category.name.toLowerCase();
+
+    // Match category ID against available categories
+    final targetId = product.categoryId ?? product.category.name.toLowerCase();
+    final targetName = product.categoryName ?? product.category.name;
+
+    final match = categories.firstWhereOrNull(
+      (c) => c.id.toLowerCase() == targetId.toLowerCase() ||
+             c.name.toLowerCase() == targetName.toLowerCase() ||
+             c.slug.toLowerCase() == targetId.toLowerCase(),
+    );
+
+    final resolvedCatId = match?.id ?? (categories.isNotEmpty ? categories.first.id : targetId);
+    formCategory.value = resolvedCatId;
     formIsAvailable.value = product.isActive;
     formIsKitchen.value = product.isKitchen;
     formImage.value = product.image;
 
-    fetchAddonsForCategory(product.category.name.toLowerCase());
-    fetchSizesForCategory(product.category.name.toLowerCase());
+    fetchAddonsForCategory(resolvedCatId);
+    fetchSizesForCategory(resolvedCatId);
   }
 
   void startNewProduct() {
@@ -304,6 +316,9 @@ class MenuManagementController extends GetxController {
         final current = selectedProduct.value!;
         final res = await _repository.updateProduct(current.id, payload);
 
+        final matchedCat = categories.firstWhereOrNull((c) => c.id == formCategory.value);
+        final matchedName = matchedCat?.name ?? formCategory.value;
+
         ProductModel updated;
         if (res.success && res.data != null) {
           updated = res.data!;
@@ -312,9 +327,11 @@ class MenuManagementController extends GetxController {
             name: name,
             sku: sku,
             category: ProductCategory.values.firstWhere(
-              (e) => e.name.toLowerCase() == formCategory.value.toLowerCase(),
+              (e) => e.name.toLowerCase() == matchedName.toLowerCase() || e.name.toLowerCase() == formCategory.value.toLowerCase(),
               orElse: () => ProductCategory.burgers,
             ),
+            categoryId: formCategory.value,
+            categoryName: matchedName,
             price: price,
             description: description,
             image: formImage.value,
