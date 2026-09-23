@@ -33,7 +33,7 @@ def init_db_schema():
                         order_type VARCHAR(30) NOT NULL DEFAULT 'Dine in',
                         status VARCHAR(30) NOT NULL DEFAULT 'Completed',
                         table_number VARCHAR(50) DEFAULT 'Table 1',
-                        cashier_name VARCHAR(100) NOT NULL DEFAULT 'Alex Khan',
+                        cashier_name VARCHAR(100) NOT NULL DEFAULT 'Akhan',
                         payment_method VARCHAR(50) NOT NULL DEFAULT 'Cash',
                         subtotal NUMERIC(10, 2) NOT NULL DEFAULT 0.0,
                         tax NUMERIC(10, 2) NOT NULL DEFAULT 0.0,
@@ -47,7 +47,7 @@ def init_db_schema():
                     ALTER TABLE orders ADD COLUMN IF NOT EXISTS order_type VARCHAR(30) DEFAULT 'Dine in';
                     ALTER TABLE orders ADD COLUMN IF NOT EXISTS status VARCHAR(30) DEFAULT 'Completed';
                     ALTER TABLE orders ADD COLUMN IF NOT EXISTS table_number VARCHAR(50) DEFAULT 'Table 1';
-                    ALTER TABLE orders ADD COLUMN IF NOT EXISTS cashier_name VARCHAR(100) DEFAULT 'Alex Khan';
+                    ALTER TABLE orders ADD COLUMN IF NOT EXISTS cashier_name VARCHAR(100) DEFAULT 'Akhan';
                     ALTER TABLE orders ADD COLUMN IF NOT EXISTS payment_method VARCHAR(50) DEFAULT 'Cash';
                     ALTER TABLE orders ADD COLUMN IF NOT EXISTS subtotal NUMERIC(10, 2) DEFAULT 0.0;
                     ALTER TABLE orders ADD COLUMN IF NOT EXISTS tax NUMERIC(10, 2) DEFAULT 0.0;
@@ -82,7 +82,7 @@ def init_db_schema():
                     CREATE TABLE IF NOT EXISTS shifts (
                         id VARCHAR(50) PRIMARY KEY,
                         cashier_id VARCHAR(50),
-                        cashier_name VARCHAR(100) NOT NULL DEFAULT 'Alex Khan',
+                        cashier_name VARCHAR(100) NOT NULL DEFAULT 'Akhan',
                         opening_float NUMERIC(10, 2) NOT NULL DEFAULT 0.0,
                         closing_cash NUMERIC(10, 2),
                         expected_cash NUMERIC(10, 2),

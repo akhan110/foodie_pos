@@ -1,3 +1,4 @@
+from fastapi import Query
 import uuid
 from datetime import datetime
 from decimal import Decimal
@@ -15,12 +16,14 @@ router = APIRouter(prefix="/api/v1/shifts", tags=["shifts"])
 class OpenShiftRequest(BaseModel):
     opening_float: float = 0.0
     cashier_id: Optional[str] = None
-    cashier_name: Optional[str] = "Alex Khan"
+    cashier_name: Optional[str] = "Akhan"
     notes: Optional[str] = None
 
 
 class CloseShiftRequest(BaseModel):
     closing_cash: float
+    cashier_id: Optional[str] = None
+    shift_id: Optional[str] = None
     notes: Optional[str] = None
 
 
@@ -29,14 +32,24 @@ def _calculate_shift_metrics(db: Session, shift: Shift):
         Order.created_at >= shift.opened_at,
         Order.status == "Completed",
     )
+    if shift.cashier_name:
+        query = query.filter(Order.cashier_name == shift.cashier_name)
     if shift.closed_at:
         query = query.filter(Order.created_at <= shift.closed_at)
 
     orders = query.all()
     total_orders = len(orders)
     total_sales = sum(float(o.total or 0) for o in orders)
-    cash_sales = sum(float(o.total or 0) for o in orders if (o.payment_method or "").lower() == "cash")
-    card_sales = sum(float(o.total or 0) for o in orders if (o.payment_method or "").lower() != "cash")
+    cash_sales = sum(
+        float(o.total or 0)
+        for o in orders
+        if (o.payment_method or "").lower() == "cash"
+    )
+    card_sales = sum(
+        float(o.total or 0)
+        for o in orders
+        if (o.payment_method or "").lower() != "cash"
+    )
     expected_cash = float(shift.opening_float or 0) + cash_sales
 
     return {
@@ -49,8 +62,18 @@ def _calculate_shift_metrics(db: Session, shift: Shift):
 
 
 @router.get("/current")
-def get_current_shift(db: Session = Depends(get_db)):
-    active_shift = db.query(Shift).filter(Shift.status == "open").order_by(Shift.opened_at.desc()).first()
+def get_current_shift(
+    cashier_id: Optional[str] = Query(None),
+    cashier_name: Optional[str] = Query(None),
+    db: Session = Depends(get_db),
+):
+    query = db.query(Shift).filter(Shift.status == "open")
+    if cashier_id:
+        query = query.filter(Shift.cashier_id == cashier_id)
+    elif cashier_name:
+        query = query.filter(Shift.cashier_name == cashier_name)
+
+    active_shift = query.order_by(Shift.opened_at.desc()).first()
     if not active_shift:
         return {
             "success": True,
@@ -66,24 +89,42 @@ def get_current_shift(db: Session = Depends(get_db)):
             "cashier_id": active_shift.cashier_id,
             "cashier_name": active_shift.cashier_name,
             "opening_float": float(active_shift.opening_float or 0),
-            "closing_cash": float(active_shift.closing_cash) if active_shift.closing_cash is not None else None,
+            "closing_cash": (
+                float(active_shift.closing_cash)
+                if active_shift.closing_cash is not None
+                else None
+            ),
             "expected_cash": metrics["expected_cash"],
-            "cash_difference": float(active_shift.cash_difference) if active_shift.cash_difference is not None else None,
+            "cash_difference": (
+                float(active_shift.cash_difference)
+                if active_shift.cash_difference is not None
+                else None
+            ),
             "total_sales": metrics["total_sales"],
             "cash_sales": metrics["cash_sales"],
             "card_sales": metrics["card_sales"],
             "total_orders": metrics["total_orders"],
             "status": active_shift.status,
             "notes": active_shift.notes,
-            "opened_at": active_shift.opened_at.isoformat() if active_shift.opened_at else None,
-            "closed_at": active_shift.closed_at.isoformat() if active_shift.closed_at else None,
+            "opened_at": (
+                active_shift.opened_at.isoformat() if active_shift.opened_at else None
+            ),
+            "closed_at": (
+                active_shift.closed_at.isoformat() if active_shift.closed_at else None
+            ),
         },
     }
 
 
 @router.post("/open")
 def open_shift(payload: OpenShiftRequest, db: Session = Depends(get_db)):
-    existing = db.query(Shift).filter(Shift.status == "open").first()
+    query = db.query(Shift).filter(Shift.status == "open")
+    if payload.cashier_id:
+        query = query.filter(Shift.cashier_id == payload.cashier_id)
+    elif payload.cashier_name:
+        query = query.filter(Shift.cashier_name == payload.cashier_name)
+
+    existing = query.first()
     if existing:
         metrics = _calculate_shift_metrics(db, existing)
         return {
@@ -96,14 +137,16 @@ def open_shift(payload: OpenShiftRequest, db: Session = Depends(get_db)):
                 "expected_cash": metrics["expected_cash"],
                 "total_sales": metrics["total_sales"],
                 "status": existing.status,
-                "opened_at": existing.opened_at.isoformat() if existing.opened_at else None,
+                "opened_at": (
+                    existing.opened_at.isoformat() if existing.opened_at else None
+                ),
             },
         }
 
     new_shift = Shift(
         id=f"shift_{uuid.uuid4().hex[:10]}",
         cashier_id=payload.cashier_id,
-        cashier_name=payload.cashier_name or "Alex Khan",
+        cashier_name=payload.cashier_name or "Akhan",
         opening_float=Decimal(str(payload.opening_float)),
         status="open",
         notes=payload.notes,
@@ -130,7 +173,24 @@ def open_shift(payload: OpenShiftRequest, db: Session = Depends(get_db)):
 
 @router.post("/close")
 def close_shift(payload: CloseShiftRequest, db: Session = Depends(get_db)):
-    active_shift = db.query(Shift).filter(Shift.status == "open").order_by(Shift.opened_at.desc()).first()
+    query = db.query(Shift).filter(Shift.status == "open")
+    if payload.shift_id:
+        query = query.filter(Shift.id == payload.shift_id)
+    elif payload.cashier_id:
+        query = query.filter(Shift.cashier_id == payload.cashier_id)
+    elif payload.notes and "cashier:" in payload.notes:
+        pass
+
+    active_shift = query.order_by(Shift.opened_at.desc()).first()
+    if not active_shift:
+        # Fallback to any latest open shift
+        active_shift = (
+            db.query(Shift)
+            .filter(Shift.status == "open")
+            .order_by(Shift.opened_at.desc())
+            .first()
+        )
+
     if not active_shift:
         raise HTTPException(status_code=400, detail="No active shift found to close")
 

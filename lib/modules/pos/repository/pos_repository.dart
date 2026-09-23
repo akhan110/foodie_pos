@@ -9,6 +9,10 @@ import 'package:foodiepos/services/network/network.dart';
 
 abstract class IPosRepository {
   Future<BaseResponseModel<List<ProductCategoryModel>>> getCategories();
+  Future<BaseResponseModel<ProductCategoryModel>> createCategory(Map<String, dynamic> data);
+  Future<BaseResponseModel<ProductCategoryModel>> updateCategory(String id, Map<String, dynamic> data);
+  Future<BaseResponseModel<dynamic>> deleteCategory(String id);
+
   Future<BaseResponseModel<List<ProductModel>>> getProducts({
     String? categoryId,
     bool includeInactive = false,
@@ -20,6 +24,7 @@ abstract class IPosRepository {
   Future<BaseResponseModel<List<ProductExtraItem>>> getAddons({String? categoryId});
   Future<BaseResponseModel<ProductExtraItem>> createAddon(Map<String, dynamic> data);
   Future<BaseResponseModel<ProductExtraItem>> updateAddon(String id, Map<String, dynamic> data);
+  Future<BaseResponseModel<ProductExtraItem>> toggleAddonStatus(String id);
   Future<BaseResponseModel<dynamic>> deleteAddon(String id);
 
   Future<BaseResponseModel<List<ProductSizeOption>>> getSizeOptions({String? categoryId});
@@ -49,6 +54,38 @@ class PosRepository implements IPosRepository {
         }
         return [];
       },
+    );
+  }
+
+  @override
+  Future<BaseResponseModel<ProductCategoryModel>> createCategory(Map<String, dynamic> data) async {
+    return await _network.apiRequest<ProductCategoryModel>(
+      requestType: ApiRequestType.post,
+      endPoint: '/api/v1/menu/categories',
+      requestData: data,
+      isBearerRequired: true,
+      parser: (item) => ProductCategoryModel.fromJson(item as Map<String, dynamic>),
+    );
+  }
+
+  @override
+  Future<BaseResponseModel<ProductCategoryModel>> updateCategory(String id, Map<String, dynamic> data) async {
+    return await _network.apiRequest<ProductCategoryModel>(
+      requestType: ApiRequestType.put,
+      endPoint: '/api/v1/menu/categories/$id',
+      requestData: data,
+      isBearerRequired: true,
+      parser: (item) => ProductCategoryModel.fromJson(item as Map<String, dynamic>),
+    );
+  }
+
+  @override
+  Future<BaseResponseModel<dynamic>> deleteCategory(String id) async {
+    return await _network.apiRequest<dynamic>(
+      requestType: ApiRequestType.delete,
+      endPoint: '/api/v1/menu/categories/$id',
+      isBearerRequired: true,
+      parser: (data) => data,
     );
   }
 
@@ -133,6 +170,8 @@ class PosRepository implements IPosRepository {
               id: map['id']?.toString() ?? '',
               name: map['name']?.toString() ?? '',
               price: (map['price'] as num?)?.toDouble() ?? 0.0,
+              isActive: map['is_active'] as bool? ?? true,
+              categoryId: map['category_id']?.toString(),
             );
           }).toList();
         }
@@ -154,6 +193,8 @@ class PosRepository implements IPosRepository {
           id: map['id']?.toString() ?? '',
           name: map['name']?.toString() ?? '',
           price: (map['price'] as num?)?.toDouble() ?? 0.0,
+          isActive: map['is_active'] as bool? ?? true,
+          categoryId: map['category_id']?.toString(),
         );
       },
     );
@@ -172,6 +213,27 @@ class PosRepository implements IPosRepository {
           id: map['id']?.toString() ?? '',
           name: map['name']?.toString() ?? '',
           price: (map['price'] as num?)?.toDouble() ?? 0.0,
+          isActive: map['is_active'] as bool? ?? true,
+          categoryId: map['category_id']?.toString(),
+        );
+      },
+    );
+  }
+
+  @override
+  Future<BaseResponseModel<ProductExtraItem>> toggleAddonStatus(String id) async {
+    return await _network.apiRequest<ProductExtraItem>(
+      requestType: ApiRequestType.patch,
+      endPoint: '/api/v1/menu/addons/$id/toggle-status',
+      isBearerRequired: true,
+      parser: (item) {
+        final map = item as Map<String, dynamic>;
+        return ProductExtraItem(
+          id: map['id']?.toString() ?? '',
+          name: map['name']?.toString() ?? '',
+          price: (map['price'] as num?)?.toDouble() ?? 0.0,
+          isActive: map['is_active'] as bool? ?? true,
+          categoryId: map['category_id']?.toString(),
         );
       },
     );

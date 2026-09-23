@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
+import 'package:foodiepos/app/widgets/app_image_widget.dart';
 import 'package:foodiepos/modules/deals/controllers/deals_controller.dart';
 import 'package:foodiepos/modules/deals/models/deal_model.dart';
 import 'package:get/get.dart';
@@ -47,6 +47,9 @@ class DealsListSection extends GetView<DealsController> {
                             color: colors.onSurfaceVariant.withValues(alpha: 0.8),
                           ),
                           border: InputBorder.none,
+                          enabledBorder: InputBorder.none,
+                          focusedBorder: InputBorder.none,
+                          filled: false,
                           isDense: true,
                           contentPadding: EdgeInsets.zero,
                         ),
@@ -215,7 +218,9 @@ class DealsListSection extends GetView<DealsController> {
               separatorBuilder: (_, __) => const SizedBox(height: 10),
               itemBuilder: (context, index) {
                 final deal = list[index];
-                final isSelected = controller.selectedDeal.value?.id == deal.id && !controller.isCreatingNew.value;
+                final isSelected = controller.isEditorOpen.value &&
+                    controller.selectedDeal.value?.id == deal.id &&
+                    !controller.isCreatingNew.value;
 
                 return _DealCard(
                   deal: deal,
@@ -223,12 +228,40 @@ class DealsListSection extends GetView<DealsController> {
                   onSelect: () => controller.selectDeal(deal),
                   onEdit: () => controller.selectDeal(deal),
                   onToggleStatus: () => controller.toggleDealStatus(deal),
+                  onDelete: () => _confirmDeleteDeal(context, deal),
                 );
               },
             );
           }),
         ),
       ],
+    );
+  }
+
+  void _confirmDeleteDeal(BuildContext context, DealModel deal) {
+    Get.dialog(
+      AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+        title: const Text('Delete Deal?', style: TextStyle(fontWeight: FontWeight.bold)),
+        content: Text('Are you sure you want to delete "${deal.name}"? This action cannot be undone.'),
+        actions: [
+          TextButton(
+            onPressed: () => Get.back(),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Get.back();
+              controller.deleteDeal(deal);
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFF04438),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            ),
+            child: const Text('Delete', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -239,6 +272,7 @@ class _DealCard extends StatelessWidget {
   final VoidCallback onSelect;
   final VoidCallback onEdit;
   final VoidCallback onToggleStatus;
+  final VoidCallback onDelete;
 
   const _DealCard({
     required this.deal,
@@ -246,6 +280,7 @@ class _DealCard extends StatelessWidget {
     required this.onSelect,
     required this.onEdit,
     required this.onToggleStatus,
+    required this.onDelete,
   });
 
   @override
@@ -404,6 +439,8 @@ class _DealCard extends StatelessWidget {
                   onToggleStatus();
                 } else if (val == 'edit') {
                   onEdit();
+                } else if (val == 'delete') {
+                  onDelete();
                 }
               },
               itemBuilder: (ctx) => [
@@ -433,6 +470,26 @@ class _DealCard extends StatelessWidget {
                     ],
                   ),
                 ),
+                const PopupMenuItem(
+                  value: 'delete',
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.delete_outline,
+                        size: 16,
+                        color: Color(0xFFF04438),
+                      ),
+                      SizedBox(width: 8),
+                      Text(
+                        'Delete Deal',
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: Color(0xFFF04438),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ],
             ),
           ],
@@ -442,16 +499,12 @@ class _DealCard extends StatelessWidget {
   }
 
   Widget _buildImage(String path) {
-    if (path.endsWith('.svg')) {
-      return Center(
-        child: SvgPicture.asset(
-          path,
-          width: 38,
-          height: 38,
-          fit: BoxFit.contain,
-        ),
-      );
-    }
-    return Image.asset(path, fit: BoxFit.cover);
+    return AppImageWidget(
+      imagePath: path,
+      width: 58,
+      height: 58,
+      fit: BoxFit.cover,
+      fallbackIcon: Icons.local_offer_outlined,
+    );
   }
 }

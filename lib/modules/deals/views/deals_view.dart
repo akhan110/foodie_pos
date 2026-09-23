@@ -88,17 +88,25 @@ class DealsView extends GetView<DealsController> {
             const SizedBox(height: 20),
 
             // =================================================================
-            // 2. TWO-PANEL SPLIT: LIST (52%) + EDITOR (48%)
+            // 2. DYNAMIC WORKSPACE: FULL LIST OR SPLIT WITH SLIDE-IN EDITOR
             // =================================================================
             Expanded(
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: const [
-                  Expanded(flex: 52, child: DealsListSection()),
-                  SizedBox(width: 20),
-                  Expanded(flex: 48, child: DealEditorSection()),
-                ],
-              ),
+              child: Obx(() {
+                final isEditorOpen = controller.isEditorOpen.value;
+
+                if (!isEditorOpen) {
+                  return const DealsListSection();
+                }
+
+                return Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: const [
+                    Expanded(flex: 52, child: DealsListSection()),
+                    SizedBox(width: 20),
+                    Expanded(flex: 48, child: DealEditorSection()),
+                  ],
+                );
+              }),
             ),
           ],
         ),

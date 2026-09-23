@@ -14,6 +14,7 @@ router = APIRouter(prefix="/api/v1/analytics", tags=["analytics"])
 @router.get("/overview")
 def get_analytics_overview(
     range: str = Query("Today", description="Today, This Week, This Month"),
+    cashier_name: Optional[str] = Query(None, description="Optional cashier name to filter for personal shift"),
     db: Session = Depends(get_db),
 ):
     now = datetime.utcnow()
@@ -36,23 +37,20 @@ def get_analytics_overview(
         comparison_label = "vs. yesterday"
 
     # Current period completed orders
-    current_orders = (
-        db.query(Order)
-        .filter(Order.created_at >= start_date, Order.status == "Completed")
-        .order_by(Order.created_at.desc())
-        .all()
-    )
+    current_query = db.query(Order).filter(Order.created_at >= start_date, Order.status == "Completed")
+    if cashier_name:
+        current_query = current_query.filter(Order.cashier_name == cashier_name)
+    current_orders = current_query.order_by(Order.created_at.desc()).all()
 
     # Previous period completed orders for percentage change
-    prev_orders = (
-        db.query(Order)
-        .filter(
-            Order.created_at >= prev_start,
-            Order.created_at <= prev_end,
-            Order.status == "Completed",
-        )
-        .all()
+    prev_query = db.query(Order).filter(
+        Order.created_at >= prev_start,
+        Order.created_at <= prev_end,
+        Order.status == "Completed",
     )
+    if cashier_name:
+        prev_query = prev_query.filter(Order.cashier_name == cashier_name)
+    prev_orders = prev_query.all()
 
     total_revenue = sum(float(o.total or 0) for o in current_orders)
     completed_orders = len(current_orders)
@@ -147,7 +145,10 @@ def get_analytics_overview(
     top_selling_items = sorted(top_items_map.values(), key=lambda x: x["quantity"], reverse=True)[:5]
 
     # 4. Recent orders (latest 5 orders of any status)
-    latest_orders = db.query(Order).order_by(Order.created_at.desc()).limit(5).all()
+    recent_query = db.query(Order)
+    if cashier_name:
+        recent_query = recent_query.filter(Order.cashier_name == cashier_name)
+    latest_orders = recent_query.order_by(Order.created_at.desc()).limit(5).all()
     recent_orders = []
     for lo in latest_orders:
         t_str = lo.created_at.strftime("%I:%M %p") if lo.created_at else "12:00 PM"

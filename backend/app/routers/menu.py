@@ -11,7 +11,9 @@ from ..schemas import (
     AddonCreateRequest,
     AddonResponse,
     AddonUpdateRequest,
+    CategoryCreateRequest,
     CategoryResponse,
+    CategoryUpdateRequest,
     ProductCreateRequest,
     ProductResponse,
     ProductUpdateRequest,
@@ -85,11 +87,13 @@ def get_categories(db: Session = Depends(get_db)):
     
     result = []
     for c in categories:
+        product_count = db.query(Product).filter(Product.category_id == c.id).count()
         result.append({
             "id": c.id,
             "name": c.name,
             "slug": c.id,
             "sort_order": c.sort_order,
+            "product_count": product_count,
             "icon": f"assets/svg/products/{c.id}.svg" if c.id in ["burger", "pizza", "chicken", "fries", "drink", "dessert"] else None
         })
 
@@ -97,6 +101,95 @@ def get_categories(db: Session = Depends(get_db)):
         "success": True,
         "message": "Categories retrieved successfully",
         "data": result,
+        "statusCode": 200,
+    }
+
+
+@router.post("/categories", status_code=status.HTTP_201_CREATED)
+def create_category(req: CategoryCreateRequest, db: Session = Depends(get_db)):
+    """Create a new menu category."""
+    cat_id = req.id if req.id and req.id.strip() else req.name.strip().lower().replace(" ", "_")
+    
+    existing = db.query(Category).filter(Category.id == cat_id).first()
+    if existing:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Category with ID/slug '{cat_id}' already exists.",
+        )
+
+    sort_order = req.sort_order if req.sort_order is not None else db.query(Category).count()
+    new_cat = Category(id=cat_id, name=req.name.strip(), sort_order=sort_order)
+    db.add(new_cat)
+    db.commit()
+    db.refresh(new_cat)
+
+    return {
+        "success": True,
+        "message": f"Category '{new_cat.name}' created successfully",
+        "data": {
+            "id": new_cat.id,
+            "name": new_cat.name,
+            "slug": new_cat.id,
+            "sort_order": new_cat.sort_order,
+            "product_count": 0,
+        },
+        "statusCode": 201,
+    }
+
+
+@router.put("/categories/{category_id}")
+def update_category(category_id: str, req: CategoryUpdateRequest, db: Session = Depends(get_db)):
+    """Update a menu category."""
+    cat = db.query(Category).filter(Category.id == category_id).first()
+    if not cat:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Category '{category_id}' not found.",
+        )
+
+    if req.name is not None:
+        cat.name = req.name.strip()
+    if req.sort_order is not None:
+        cat.sort_order = req.sort_order
+
+    db.commit()
+    db.refresh(cat)
+
+    product_count = db.query(Product).filter(Product.category_id == cat.id).count()
+
+    return {
+        "success": True,
+        "message": f"Category '{cat.name}' updated successfully",
+        "data": {
+            "id": cat.id,
+            "name": cat.name,
+            "slug": cat.id,
+            "sort_order": cat.sort_order,
+            "product_count": product_count,
+        },
+        "statusCode": 200,
+    }
+
+
+@router.delete("/categories/{category_id}")
+def delete_category(category_id: str, db: Session = Depends(get_db)):
+    """Delete a menu category."""
+    cat = db.query(Category).filter(Category.id == category_id).first()
+    if not cat:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Category '{category_id}' not found.",
+        )
+
+    # Delete or reassign products under category
+    db.query(Product).filter(Product.category_id == category_id).delete()
+    db.delete(cat)
+    db.commit()
+
+    return {
+        "success": True,
+        "message": f"Category '{category_id}' deleted successfully",
+        "data": {"id": category_id},
         "statusCode": 200,
     }
 
@@ -131,8 +224,10 @@ def get_products(
 
     result = []
     for p in products:
+        sku = p.sku or f"{p.category_id[:3].upper()}-{p.id[-3:].upper()}"
         result.append({
             "id": p.id,
+            "sku": sku,
             "name": p.name,
             "category": p.category_id,
             "category_id": p.category_id,
@@ -141,6 +236,7 @@ def get_products(
             "image": p.image or "assets/svg/products/burger.svg",
             "is_popular": p.is_popular,
             "is_combo": p.is_combo,
+            "is_kitchen": p.is_kitchen if p.is_kitchen is not None else True,
             "is_active": p.is_active,
         })
 
@@ -165,8 +261,11 @@ def create_product(req: ProductCreateRequest, db: Session = Depends(get_db)):
         db.add(cat)
         db.commit()
 
+    sku = req.sku if req.sku and req.sku.strip() else f"{req.category_id[:3].upper()}-{product_id[-3:].upper()}"
+
     new_product = Product(
         id=product_id,
+        sku=sku,
         name=req.name,
         category_id=req.category_id.lower(),
         price=req.price,
@@ -174,6 +273,7 @@ def create_product(req: ProductCreateRequest, db: Session = Depends(get_db)):
         image=req.image or "assets/svg/products/burger.svg",
         is_popular=req.is_popular or False,
         is_combo=req.is_combo or False,
+        is_kitchen=req.is_kitchen if req.is_kitchen is not None else True,
         is_active=req.is_active if req.is_active is not None else True,
     )
     db.add(new_product)
@@ -185,6 +285,7 @@ def create_product(req: ProductCreateRequest, db: Session = Depends(get_db)):
         "message": "Product created successfully",
         "data": {
             "id": new_product.id,
+            "sku": new_product.sku,
             "name": new_product.name,
             "category": new_product.category_id,
             "category_id": new_product.category_id,
@@ -193,6 +294,7 @@ def create_product(req: ProductCreateRequest, db: Session = Depends(get_db)):
             "image": new_product.image,
             "is_popular": new_product.is_popular,
             "is_combo": new_product.is_combo,
+            "is_kitchen": new_product.is_kitchen,
             "is_active": new_product.is_active,
         },
         "statusCode": 201,
@@ -211,6 +313,8 @@ def update_product(product_id: str, req: ProductUpdateRequest, db: Session = Dep
 
     if req.name is not None:
         product.name = req.name
+    if req.sku is not None:
+        product.sku = req.sku
     if req.category_id is not None:
         product.category_id = req.category_id.lower()
     if req.price is not None:
@@ -223,6 +327,8 @@ def update_product(product_id: str, req: ProductUpdateRequest, db: Session = Dep
         product.is_popular = req.is_popular
     if req.is_combo is not None:
         product.is_combo = req.is_combo
+    if req.is_kitchen is not None:
+        product.is_kitchen = req.is_kitchen
     if req.is_active is not None:
         product.is_active = req.is_active
 
@@ -234,6 +340,7 @@ def update_product(product_id: str, req: ProductUpdateRequest, db: Session = Dep
         "message": "Product updated successfully",
         "data": {
             "id": product.id,
+            "sku": product.sku or f"{product.category_id[:3].upper()}-{product.id[-3:].upper()}",
             "name": product.name,
             "category": product.category_id,
             "category_id": product.category_id,
@@ -242,6 +349,7 @@ def update_product(product_id: str, req: ProductUpdateRequest, db: Session = Dep
             "image": product.image,
             "is_popular": product.is_popular,
             "is_combo": product.is_combo,
+            "is_kitchen": product.is_kitchen if product.is_kitchen is not None else True,
             "is_active": product.is_active,
         },
         "statusCode": 200,
@@ -371,6 +479,34 @@ def update_addon(addon_id: str, req: AddonUpdateRequest, db: Session = Depends(g
     return {
         "success": True,
         "message": "Addon updated successfully",
+        "data": {
+            "id": addon.id,
+            "name": addon.name,
+            "price": float(addon.price),
+            "category_id": addon.category_id,
+            "is_active": addon.is_active,
+        },
+        "statusCode": 200,
+    }
+
+
+@router.patch("/addons/{addon_id}/toggle-status")
+def toggle_addon_status(addon_id: str, db: Session = Depends(get_db)):
+    """Toggle an add-on's active state."""
+    addon = db.query(Addon).filter(Addon.id == addon_id).first()
+    if not addon:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Addon with ID '{addon_id}' not found.",
+        )
+
+    addon.is_active = not (addon.is_active or False)
+    db.commit()
+    db.refresh(addon)
+
+    return {
+        "success": True,
+        "message": f"Addon '{addon.name}' is now {'active' if addon.is_active else 'inactive'}",
         "data": {
             "id": addon.id,
             "name": addon.name,

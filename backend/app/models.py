@@ -48,6 +48,7 @@ class Product(Base):
     __tablename__ = "products"
 
     id = Column(String(50), primary_key=True)
+    sku = Column(String(50), nullable=True, default=None)
     name = Column(String(150), nullable=False)
     category_id = Column(
         String(50), ForeignKey("categories.id"), nullable=False, index=True
@@ -57,6 +58,7 @@ class Product(Base):
     image = Column(String(255), default="assets/svg/products/burger.svg")
     is_popular = Column(Boolean, default=False)
     is_combo = Column(Boolean, default=False)
+    is_kitchen = Column(Boolean, default=True)
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
     category_rel = relationship("Category", back_populates="products")
@@ -94,7 +96,7 @@ class Order(Base):
     order_type = Column(String(30), nullable=False, default="Dine in")
     status = Column(String(30), nullable=False, default="Completed")
     table_number = Column(String(50), nullable=True, default="Table 1")
-    cashier_name = Column(String(100), nullable=False, default="Alex Khan")
+    cashier_name = Column(String(100), nullable=False, default="Akhan")
     payment_method = Column(String(50), nullable=False, default="Cash")
     subtotal = Column(Numeric(10, 2), nullable=False, default=0.0)
     tax = Column(Numeric(10, 2), nullable=False, default=0.0)
@@ -131,7 +133,7 @@ class Shift(Base):
 
     id = Column(String(50), primary_key=True)
     cashier_id = Column(String(50), nullable=True, index=True)
-    cashier_name = Column(String(100), nullable=False, default="Alex Khan")
+    cashier_name = Column(String(100), nullable=False, default="Akhan")
     opening_float = Column(Numeric(10, 2), nullable=False, default=0.0)
     closing_cash = Column(Numeric(10, 2), nullable=True)
     expected_cash = Column(Numeric(10, 2), nullable=True)

@@ -35,20 +35,53 @@ class ProductCard extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // IMAGE THUMBNAIL
+              // IMAGE THUMBNAIL WITH POPULAR BADGE
               Expanded(
-                child: Container(
-                  width: double.infinity,
-                  decoration: BoxDecoration(
-                    color: colors.surfaceContainerHighest,
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: AppImageWidget(
-                    imagePath: product.image,
-                    fit: BoxFit.contain,
-                    borderRadius: BorderRadius.circular(10),
-                    fallbackIconSize: 40,
-                  ),
+                child: Stack(
+                  children: [
+                    Container(
+                      width: double.infinity,
+                      height: double.infinity,
+                      decoration: BoxDecoration(
+                        color: colors.surfaceContainerHighest,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: AppImageWidget(
+                        imagePath: product.image,
+                        fit: BoxFit.contain,
+                        borderRadius: BorderRadius.circular(10),
+                        fallbackIconSize: 40,
+                      ),
+                    ),
+                    if (product.isPopular)
+                      Positioned(
+                        top: 6,
+                        right: 6,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 2,
+                          ),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFFEF3C7),
+                            borderRadius: BorderRadius.circular(4),
+                            border: Border.all(
+                              color: const Color(0xFFF59E0B).withValues(alpha: 0.6),
+                              width: 0.8,
+                            ),
+                          ),
+                          child: const Text(
+                            'POPULAR',
+                            style: TextStyle(
+                              fontSize: 8.5,
+                              fontWeight: FontWeight.w800,
+                              color: Color(0xFFB45309),
+                              letterSpacing: 0.3,
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
                 ),
               ),
 

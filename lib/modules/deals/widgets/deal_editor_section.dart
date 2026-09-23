@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:foodiepos/app/widgets/app_image_widget.dart';
 import 'package:foodiepos/modules/deals/controllers/deals_controller.dart';
 import 'package:foodiepos/modules/pos/controllers/pos_controller.dart';
 import 'package:get/get.dart';
@@ -32,56 +33,114 @@ class DealEditorSection extends GetView<DealsController> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           // ===================================================================
-          // 1. HEADER: Deal Details + Delete Deal
+          // 1. HEADER: Dynamic Title (Create vs Edit) + Actions
           // ===================================================================
           Padding(
-            padding: const EdgeInsets.fromLTRB(20, 18, 20, 14),
+            padding: const EdgeInsets.fromLTRB(20, 16, 14, 14),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                Expanded(
+                  child: Obx(() {
+                    final isNew = controller.isCreatingNew.value;
+                    final dealName = controller.selectedDeal.value?.name ?? '';
+
+                    return Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: isNew
+                                ? const Color(0xFF12B76A).withValues(alpha: 0.15)
+                                : const Color(0xFFFF6B35).withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(6),
+                            border: Border.all(
+                              color: isNew
+                                  ? const Color(0xFF12B76A).withValues(alpha: 0.4)
+                                  : const Color(0xFFFF6B35).withValues(alpha: 0.4),
+                            ),
+                          ),
+                          child: Text(
+                            isNew ? '+ NEW DEAL' : 'EDITING',
+                            style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w800,
+                              color: isNew ? const Color(0xFF12B76A) : const Color(0xFFFF6B35),
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                isNew ? 'Create New Deal' : 'Edit Deal: $dealName',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w800,
+                                  color: colors.onSurface,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                isNew
+                                    ? 'Add a brand new combo or promotional meal to POS.'
+                                    : 'Modify pricing, items, and status for this deal.',
+                                style: TextStyle(
+                                  fontSize: 11.5,
+                                  color: colors.onSurfaceVariant,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    );
+                  }),
+                ),
+
+                Row(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text(
-                      'Deal Details',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w800,
-                        color: colors.onSurface,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      'Create or update deal information.',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: colors.onSurfaceVariant,
-                      ),
+                    Obx(() {
+                      final canDelete = controller.selectedDeal.value != null && !controller.isCreatingNew.value;
+                      if (!canDelete) return const SizedBox.shrink();
+
+                      return Padding(
+                        padding: const EdgeInsets.only(right: 6),
+                        child: OutlinedButton.icon(
+                          onPressed: () => _confirmDelete(context),
+                          icon: const Icon(Icons.delete_outline, size: 14, color: Color(0xFFF04438)),
+                          label: const Text(
+                            'Delete',
+                            style: TextStyle(
+                              fontSize: 11.5,
+                              fontWeight: FontWeight.w700,
+                              color: Color(0xFFF04438),
+                            ),
+                          ),
+                          style: OutlinedButton.styleFrom(
+                            side: const BorderSide(color: Color(0xFFFDA29B)),
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                          ),
+                        ),
+                      );
+                    }),
+
+                    IconButton(
+                      tooltip: 'Close Editor',
+                      onPressed: () => controller.closeEditor(),
+                      icon: Icon(Icons.close_rounded, size: 20, color: colors.onSurfaceVariant),
                     ),
                   ],
                 ),
-                Obx(() {
-                  final canDelete = controller.selectedDeal.value != null && !controller.isCreatingNew.value;
-                  if (!canDelete) return const SizedBox.shrink();
-
-                  return OutlinedButton.icon(
-                    onPressed: () => _confirmDelete(context),
-                    icon: const Icon(Icons.delete_outline, size: 16, color: Color(0xFFF04438)),
-                    label: const Text(
-                      'Delete Deal',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w700,
-                        color: Color(0xFFF04438),
-                      ),
-                    ),
-                    style: OutlinedButton.styleFrom(
-                      side: const BorderSide(color: Color(0xFFFDA29B)),
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                    ),
-                  );
-                }),
               ],
             ),
           ),
@@ -145,6 +204,9 @@ class DealEditorSection extends GetView<DealsController> {
                                 decoration: const InputDecoration(
                                   hintText: 'e.g. Burger Combo',
                                   border: InputBorder.none,
+                                  enabledBorder: InputBorder.none,
+                                  focusedBorder: InputBorder.none,
+                                  filled: false,
                                   isDense: true,
                                   contentPadding: EdgeInsets.symmetric(vertical: 11),
                                 ),
@@ -317,13 +379,7 @@ class DealEditorSection extends GetView<DealsController> {
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
                 TextButton(
-                  onPressed: () {
-                    if (controller.selectedDeal.value != null) {
-                      controller.selectDeal(controller.selectedDeal.value!);
-                    } else {
-                      controller.startNewDeal();
-                    }
-                  },
+                  onPressed: () => controller.closeEditor(),
                   style: TextButton.styleFrom(
                     padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
@@ -339,6 +395,7 @@ class DealEditorSection extends GetView<DealsController> {
                 ),
                 const SizedBox(width: 12),
                 Obx(() {
+                  final isNew = controller.isCreatingNew.value;
                   return ElevatedButton.icon(
                     onPressed: controller.isSaving.value ? null : () => controller.saveDeal(),
                     icon: controller.isSaving.value
@@ -347,9 +404,11 @@ class DealEditorSection extends GetView<DealsController> {
                             height: 16,
                             child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                           )
-                        : const Icon(Icons.save_outlined, size: 16, color: Colors.white),
+                        : Icon(isNew ? Icons.add_circle_outline : Icons.save_outlined, size: 16, color: Colors.white),
                     label: Text(
-                      controller.isSaving.value ? 'Saving...' : 'Save Deal',
+                      controller.isSaving.value
+                          ? 'Saving...'
+                          : (isNew ? 'Create Deal' : 'Save Changes'),
                       style: const TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w700,
@@ -410,67 +469,116 @@ class DealEditorSection extends GetView<DealsController> {
       child: Column(
         children: [
           // Image Box with edit pencil badge
-          Stack(
-            children: [
-              Container(
-                height: 110,
-                width: double.infinity,
-                decoration: BoxDecoration(
-                  color: isDark ? const Color(0xFF1E222B) : Colors.white,
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(
-                    color: isDark ? const Color(0xFF2A313F) : const Color(0xFFEAECF0),
-                  ),
-                ),
-                child: Center(
-                  child: Obx(() {
-                    final path = controller.imageUrl.value;
-                    if (path.endsWith('.svg')) {
-                      return SvgPicture.asset(path, width: 64, height: 64, fit: BoxFit.contain);
-                    }
-                    return Image.asset(path, fit: BoxFit.contain);
-                  }),
-                ),
-              ),
-              Positioned(
-                top: 8,
-                right: 8,
-                child: Container(
-                  width: 26,
-                  height: 26,
+          InkWell(
+            onTap: () => controller.pickAndUploadImage(),
+            borderRadius: BorderRadius.circular(10),
+            child: Stack(
+              children: [
+                Container(
+                  height: 110,
+                  width: double.infinity,
                   decoration: BoxDecoration(
-                    color: Colors.white,
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(color: Colors.black.withValues(alpha: 0.15), blurRadius: 4),
-                    ],
+                    color: isDark ? const Color(0xFF1E222B) : Colors.white,
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(
+                      color: isDark ? const Color(0xFF2A313F) : const Color(0xFFEAECF0),
+                    ),
                   ),
-                  child: const Center(
-                    child: Icon(Icons.edit, size: 14, color: Color(0xFF344054)),
+                  child: Center(
+                    child: Obx(() {
+                      if (controller.isUploadingImage.value) {
+                        return const SizedBox(
+                          width: 28,
+                          height: 28,
+                          child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFFFF6B35)),
+                        );
+                      }
+                      final path = controller.imageUrl.value;
+                      return AppImageWidget(
+                        imagePath: path,
+                        width: 80,
+                        height: 80,
+                        fit: BoxFit.contain,
+                        fallbackIcon: Icons.local_offer_outlined,
+                        fallbackIconColor: const Color(0xFFFF6B35),
+                      );
+                    }),
+                  ),
+                ),
+                Positioned(
+                  top: 8,
+                  right: 8,
+                  child: Container(
+                    width: 26,
+                    height: 26,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(color: Colors.black.withValues(alpha: 0.15), blurRadius: 4),
+                      ],
+                    ),
+                    child: const Center(
+                      child: Icon(Icons.edit, size: 14, color: Color(0xFF344054)),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 10),
+
+          // Upload Image & Presets Button Row
+          Row(
+            children: [
+              Expanded(
+                flex: 6,
+                child: Obx(() {
+                  final isUploading = controller.isUploadingImage.value;
+                  return ElevatedButton.icon(
+                    onPressed: isUploading ? null : () => controller.pickAndUploadImage(),
+                    icon: isUploading
+                        ? const SizedBox(
+                            width: 14,
+                            height: 14,
+                            child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                          )
+                        : const Icon(Icons.cloud_upload_outlined, size: 15, color: Colors.white),
+                    label: Text(
+                      isUploading ? 'Uploading...' : 'Upload Image',
+                      style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700, color: Colors.white),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFFF6B35),
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(7)),
+                      elevation: 0,
+                    ),
+                  );
+                }),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                flex: 4,
+                child: OutlinedButton.icon(
+                  onPressed: () => _selectPresetImage(context),
+                  icon: Icon(Icons.grid_view_rounded, size: 14, color: colors.onSurface),
+                  label: Text(
+                    'Presets',
+                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: colors.onSurface),
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    side: BorderSide(color: isDark ? const Color(0xFF2A313F) : const Color(0xFFD0D5DD)),
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(7)),
                   ),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 10),
-
-          // Change Image Button
-          OutlinedButton.icon(
-            onPressed: () => _selectPresetImage(context),
-            icon: const Icon(Icons.upload_outlined, size: 14, color: Color(0xFF344054)),
-            label: const Text(
-              'Change Image',
-              style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Color(0xFF344054)),
-            ),
-            style: OutlinedButton.styleFrom(
-              side: const BorderSide(color: Color(0xFFD0D5DD)),
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
-            ),
-          ),
-          const SizedBox(height: 3),
+          const SizedBox(height: 4),
           Text(
-            'JPG, PNG (Max 2MB)',
+            'JPG, PNG, WebP (Max 2MB)',
             style: TextStyle(fontSize: 10, color: colors.onSurfaceVariant),
           ),
         ],
@@ -533,7 +641,7 @@ class DealEditorSection extends GetView<DealsController> {
                   ),
                 ),
                 const SizedBox(
-                  width: 32,
+                  width: 54,
                   child: Center(
                     child: Text(
                       'Action',
@@ -671,12 +779,14 @@ class DealEditorSection extends GetView<DealsController> {
 
                       // Trash Button
                       SizedBox(
-                        width: 32,
-                        child: IconButton(
-                          icon: const Icon(Icons.delete_outline, size: 16, color: Color(0xFFF04438)),
-                          onPressed: () => controller.removeItem(index),
-                          padding: EdgeInsets.zero,
-                          tooltip: 'Remove',
+                        width: 54,
+                        child: Center(
+                          child: IconButton(
+                            icon: const Icon(Icons.delete_outline, size: 16, color: Color(0xFFF04438)),
+                            onPressed: () => controller.removeItem(index),
+                            padding: EdgeInsets.zero,
+                            tooltip: 'Remove',
+                          ),
                         ),
                       ),
                     ],
@@ -864,9 +974,13 @@ class DealEditorSection extends GetView<DealsController> {
                           borderRadius: BorderRadius.circular(7),
                           child: Obx(() {
                             final p = controller.imageUrl.value;
-                            return p.endsWith('.svg')
-                                ? Center(child: SvgPicture.asset(p, width: 28, height: 28))
-                                : Image.asset(p, fit: BoxFit.cover);
+                            return AppImageWidget(
+                              imagePath: p,
+                              width: 44,
+                              height: 44,
+                              fit: BoxFit.cover,
+                              fallbackIcon: Icons.local_offer_outlined,
+                            );
                           }),
                         ),
                       ),

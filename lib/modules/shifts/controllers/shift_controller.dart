@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:foodiepos/app/constants/storage_keys.dart';
+import 'package:foodiepos/app/routes/app_routes.dart';
 import 'package:foodiepos/app/utils/app_loader.dart';
 import 'package:foodiepos/modules/shifts/models/shift_model.dart';
+import 'package:foodiepos/modules/shifts/widgets/open_shift_dialog.dart';
 import 'package:foodiepos/services/network/api_request_type.dart';
 import 'package:foodiepos/services/network/network.dart';
 import 'package:get/get.dart';
@@ -16,15 +18,71 @@ class ShiftController extends GetxController {
   @override
   void onInit() {
     super.onInit();
-    fetchCurrentShift();
+    final storage = GetStorage();
+    final token = storage.read(StorageKeys.token);
+    if (token != null && token.toString().trim().isNotEmpty) {
+      fetchCurrentShift();
+    }
+  }
+
+  bool _isEligibleForShiftPrompt() {
+    final storage = GetStorage();
+    final token = storage.read(StorageKeys.token);
+    // User must be authenticated
+    if (token == null || token.toString().trim().isEmpty) return false;
+
+    // Must NOT be on the login screen
+    if (Get.currentRoute == AppRoutes.login) return false;
+
+    // Must be on the authenticated POS or main shell route
+    if (Get.currentRoute != AppRoutes.pos && !Get.currentRoute.contains('pos')) {
+      return false;
+    }
+
+    return true;
+  }
+
+  Future<void> checkAndPromptOpenShift() async {
+    if (!_isEligibleForShiftPrompt()) return;
+
+    await fetchCurrentShift();
+
+    if (!_isEligibleForShiftPrompt()) return;
+
+    if (currentShift.value == null) {
+      await Future.delayed(const Duration(milliseconds: 350));
+
+      if (!_isEligibleForShiftPrompt()) return;
+
+      if (Get.context != null && currentShift.value == null) {
+        if (Get.isDialogOpen != true) {
+          OpenShiftDialog.show(Get.context!, this);
+        }
+      }
+    }
   }
 
   Future<void> fetchCurrentShift() async {
+    final storage = GetStorage();
+    final token = storage.read(StorageKeys.token);
+    if (token == null || token.toString().trim().isEmpty) {
+      currentShift.value = null;
+      return;
+    }
+
     try {
       isLoading.value = true;
+      final cashierId = storage.read(StorageKeys.cashierId);
+      final cashierName = storage.read(StorageKeys.cashierName);
+
+      final queryParams = <String, dynamic>{};
+      if (cashierId != null) queryParams['cashier_id'] = cashierId.toString();
+      if (cashierName != null) queryParams['cashier_name'] = cashierName.toString();
+
       final response = await _network.apiRequest<ShiftModel?>(
         requestType: ApiRequestType.get,
         endPoint: '/api/v1/shifts/current',
+        queryParameters: queryParams.isNotEmpty ? queryParams : null,
         isBearerRequired: false,
         parser: (data) {
           if (data is Map<String, dynamic>) {
@@ -48,13 +106,15 @@ class ShiftController extends GetxController {
     try {
       AppLoader.show(status: 'Opening shift...');
       final storage = GetStorage();
-      final cashierName = storage.read(StorageKeys.cashierName) ?? 'Alex Khan';
+      final cashierId = storage.read(StorageKeys.cashierId);
+      final cashierName = storage.read(StorageKeys.cashierName) ?? 'Akhan';
 
       final response = await _network.apiRequest<ShiftModel>(
         requestType: ApiRequestType.post,
         endPoint: '/api/v1/shifts/open',
         requestData: {
           'opening_float': openingFloat,
+          'cashier_id': cashierId,
           'cashier_name': cashierName,
           'notes': notes,
         },
@@ -70,9 +130,14 @@ class ShiftController extends GetxController {
       return false;
     } catch (e) {
       // Fallback local shift
+      final storage = GetStorage();
+      final cashierId = storage.read(StorageKeys.cashierId);
+      final cashierName = storage.read(StorageKeys.cashierName) ?? 'Akhan';
+
       currentShift.value = ShiftModel(
         id: 'shift_local_${DateTime.now().millisecondsSinceEpoch}',
-        cashierName: 'Alex Khan',
+        cashierId: cashierId?.toString(),
+        cashierName: cashierName.toString(),
         openingFloat: openingFloat,
         expectedCash: openingFloat,
         totalSales: 0.0,
@@ -90,12 +155,16 @@ class ShiftController extends GetxController {
   Future<bool> closeShift(double countedCash, {String? notes}) async {
     try {
       AppLoader.show(status: 'Reconciling shift...');
+      final storage = GetStorage();
+      final cashierId = storage.read(StorageKeys.cashierId);
 
       final response = await _network.apiRequest<ShiftModel>(
         requestType: ApiRequestType.post,
         endPoint: '/api/v1/shifts/close',
         requestData: {
           'closing_cash': countedCash,
+          'cashier_id': cashierId,
+          'shift_id': currentShift.value?.id,
           'notes': notes,
         },
         isBearerRequired: true,

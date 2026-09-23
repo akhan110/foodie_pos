@@ -30,7 +30,7 @@ def _seed_default_orders_if_empty(db: Session):
             "order_type": "Dine in",
             "status": "Completed",
             "table_number": "Table 5",
-            "cashier_name": "Alex Khan",
+            "cashier_name": "Akhan",
             "payment_method": "Cash",
             "subtotal": 1860.0,
             "tax": 0.0,
@@ -45,7 +45,8 @@ def _seed_default_orders_if_empty(db: Session):
                     "product_id": "prod-1",
                     "product_name": "Classic Smash Burger",
                     "product_image": "assets/svg/products/burger.svg",
-                    "size": "Regular",
+                    "size": "Double Patty",
+                    "addons": "Extra Cheddar Cheese, Jalapenos",
                     "quantity": 2,
                     "unit_price": 620.0,
                     "total_price": 1240.0,
@@ -55,7 +56,8 @@ def _seed_default_orders_if_empty(db: Session):
                     "product_id": "prod-4",
                     "product_name": "Sea Salt Fries",
                     "product_image": "assets/svg/products/fries.svg",
-                    "size": "Regular",
+                    "size": "Large",
+                    "addons": "Spicy Mayo Dip",
                     "quantity": 1,
                     "unit_price": 260.0,
                     "total_price": 260.0,
@@ -78,7 +80,7 @@ def _seed_default_orders_if_empty(db: Session):
             "order_type": "Takeaway",
             "status": "Completed",
             "table_number": "Counter",
-            "cashier_name": "Alex Khan",
+            "cashier_name": "Akhan",
             "payment_method": "Card",
             "subtotal": 1050.0,
             "tax": 0.0,
@@ -116,7 +118,7 @@ def _seed_default_orders_if_empty(db: Session):
             "order_type": "Delivery",
             "status": "Preparing",
             "table_number": "Online Rider",
-            "cashier_name": "Alex Khan",
+            "cashier_name": "Akhan",
             "payment_method": "Online",
             "subtotal": 1240.0,
             "tax": 0.0,
@@ -154,7 +156,7 @@ def _seed_default_orders_if_empty(db: Session):
             "order_type": "Dine in",
             "status": "Voided",
             "table_number": "Table 2",
-            "cashier_name": "Alex Khan",
+            "cashier_name": "Akhan",
             "payment_method": "Cash",
             "subtotal": 1430.0,
             "tax": 0.0,
@@ -192,7 +194,7 @@ def _seed_default_orders_if_empty(db: Session):
             "order_type": "Takeaway",
             "status": "Completed",
             "table_number": "Counter",
-            "cashier_name": "Alex Khan",
+            "cashier_name": "Akhan",
             "payment_method": "Cash",
             "subtotal": 1620.0,
             "tax": 0.0,
@@ -240,7 +242,7 @@ def _seed_default_orders_if_empty(db: Session):
             "order_type": "Delivery",
             "status": "Completed",
             "table_number": "Online Rider",
-            "cashier_name": "Alex Khan",
+            "cashier_name": "Akhan",
             "payment_method": "Card",
             "subtotal": 1810.0,
             "tax": 0.0,
@@ -278,7 +280,7 @@ def _seed_default_orders_if_empty(db: Session):
             "order_type": "Dine in",
             "status": "Preparing",
             "table_number": "Table 8",
-            "cashier_name": "Alex Khan",
+            "cashier_name": "Akhan",
             "payment_method": "Cash",
             "subtotal": 2000.0,
             "tax": 0.0,
@@ -326,7 +328,7 @@ def _seed_default_orders_if_empty(db: Session):
             "order_type": "Takeaway",
             "status": "Voided",
             "table_number": "Counter",
-            "cashier_name": "Alex Khan",
+            "cashier_name": "Akhan",
             "payment_method": "Cash",
             "subtotal": 2190.0,
             "tax": 0.0,
@@ -479,7 +481,7 @@ def create_order(payload: OrderCreateRequest, db: Session = Depends(get_db)):
         order_type=payload.order_type or "Dine in",
         status=payload.status or "Completed",
         table_number=payload.table_number or "Table 1",
-        cashier_name=payload.cashier_name or "Alex Khan",
+        cashier_name=payload.cashier_name or "Akhan",
         payment_method=payload.payment_method or "Cash",
         subtotal=payload.subtotal,
         tax=payload.tax or 0.0,
@@ -563,5 +565,31 @@ def update_order_status(
         "success": True,
         "message": f"Order {order.order_number} status updated to {order.status}.",
         "data": ord_dict,
+        "statusCode": 200,
+    }
+
+
+@router.delete("/{order_id}")
+def delete_order(order_id: str, db: Session = Depends(get_db)):
+    """Delete an order by ID or order_number."""
+    order = (
+        db.query(Order)
+        .filter((Order.id == order_id) | (Order.order_number == order_id))
+        .first()
+    )
+    if not order:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Order '{order_id}' not found.",
+        )
+
+    order_num = order.order_number
+    db.delete(order)
+    db.commit()
+
+    return {
+        "success": True,
+        "message": f"Order {order_num} deleted successfully.",
+        "data": None,
         "statusCode": 200,
     }

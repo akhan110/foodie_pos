@@ -11,6 +11,7 @@ import 'package:foodiepos/modules/pos/model/product_model.dart';
 import 'package:foodiepos/modules/pos/repository/pos_repository.dart';
 import 'package:foodiepos/modules/pos/widgets/new_order/dialogs/receipt_dialog.dart';
 import 'package:foodiepos/modules/shell/controller/main_shell_controller.dart';
+import 'package:foodiepos/modules/shifts/controllers/shift_controller.dart';
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
 
@@ -64,6 +65,14 @@ class PosController extends GetxController {
   void onInit() {
     super.onInit();
     loadMenuData();
+  }
+
+  @override
+  void onReady() {
+    super.onReady();
+    if (Get.isRegistered<ShiftController>()) {
+      Get.find<ShiftController>().checkAndPromptOpenShift();
+    }
   }
 
   Future<void> loadMenuData() async {
@@ -566,7 +575,7 @@ class PosController extends GetxController {
       AppLoader.show(status: 'Completing order...');
 
       final storage = GetStorage();
-      final cashierName = storage.read(StorageKeys.cashierName) ?? 'Alex Khan';
+      final cashierName = storage.read(StorageKeys.cashierName) ?? 'Akhan';
 
       final String calculatedTable;
       final typeLower = orderType.value.toLowerCase();
@@ -590,6 +599,7 @@ class PosController extends GetxController {
           'quantity': it.quantity,
           'unit_price': it.unitPrice,
           'total_price': it.subtotal,
+          'notes': it.notes,
         };
       }).toList();
 

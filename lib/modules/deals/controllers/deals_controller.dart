@@ -1,16 +1,24 @@
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:foodiepos/app/utils/app_loader.dart';
 import 'package:foodiepos/modules/deals/models/deal_model.dart';
 import 'package:foodiepos/modules/pos/model/product_model.dart';
+import 'package:foodiepos/modules/pos/repository/pos_repository.dart';
 import 'package:foodiepos/services/network/api_request_type.dart';
 import 'package:foodiepos/services/network/network.dart';
 import 'package:get/get.dart';
 
 class DealsController extends GetxController {
   final Network _network = Network.instance;
+  final IPosRepository _posRepository;
+
+  DealsController({IPosRepository? posRepository})
+      : _posRepository = posRepository ?? PosRepository();
 
   final RxList<DealModel> deals = <DealModel>[].obs;
   final RxBool isLoading = false.obs;
   final RxBool isSaving = false.obs;
+  final RxBool isUploadingImage = false.obs;
 
   // Filters & Search
   final RxString searchQuery = ''.obs;
@@ -20,6 +28,7 @@ class DealsController extends GetxController {
   // Selected Deal for Right Editor Panel
   final Rx<DealModel?> selectedDeal = Rx<DealModel?>(null);
   final RxBool isCreatingNew = false.obs;
+  final RxBool isEditorOpen = false.obs;
 
   // Form Fields
   final TextEditingController nameController = TextEditingController();
@@ -37,6 +46,53 @@ class DealsController extends GetxController {
     'Family Deals',
     'Limited Time',
   ];
+
+  Future<void> pickAndUploadImage() async {
+    try {
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['jpg', 'jpeg', 'png', 'webp', 'svg'],
+        withData: true,
+      );
+
+      if (result == null || result.files.isEmpty) return;
+
+      final file = result.files.first;
+      isUploadingImage.value = true;
+      AppLoader.show(status: 'Uploading ${file.name}...');
+
+      if (file.path != null && file.path!.isNotEmpty) {
+        final res = await _posRepository.uploadImage(
+          file.path!,
+          bytes: file.bytes,
+          filename: file.name,
+        );
+
+        if (res.success && res.data != null && res.data!.isNotEmpty) {
+          imageUrl.value = res.data!;
+          AppLoader.showSuccess('Deal image uploaded successfully!');
+        } else {
+          // Fallback to local path for instant preview
+          imageUrl.value = file.path!;
+          AppLoader.showSuccess('Image selected');
+        }
+      } else if (file.bytes != null) {
+        final res = await _posRepository.uploadImage(
+          file.name,
+          bytes: file.bytes,
+          filename: file.name,
+        );
+        if (res.success && res.data != null && res.data!.isNotEmpty) {
+          imageUrl.value = res.data!;
+          AppLoader.showSuccess('Deal image uploaded successfully!');
+        }
+      }
+    } catch (e) {
+      AppLoader.showError('Could not upload image: $e');
+    } finally {
+      isUploadingImage.value = false;
+    }
+  }
 
   @override
   void onInit() {
@@ -137,16 +193,11 @@ class DealsController extends GetxController {
             .map((e) => DealModel.fromJson(e as Map<String, dynamic>))
             .toList();
 
-        // Select first deal if none selected
-        if (selectedDeal.value == null && deals.isNotEmpty) {
-          selectDeal(deals.first);
-        } else if (selectedDeal.value != null) {
-          // Re-sync selected deal
+        // Only re-sync if the editor was already actively opened by user
+        if (selectedDeal.value != null && isEditorOpen.value) {
           final match = deals.firstWhereOrNull((d) => d.id == selectedDeal.value!.id);
           if (match != null) {
             selectDeal(match);
-          } else if (deals.isNotEmpty) {
-            selectDeal(deals.first);
           }
         }
       } else {
@@ -163,6 +214,7 @@ class DealsController extends GetxController {
   void selectDeal(DealModel deal) {
     selectedDeal.value = deal;
     isCreatingNew.value = false;
+    isEditorOpen.value = true;
 
     nameController.text = deal.name;
     previewName.value = deal.name;
@@ -180,6 +232,7 @@ class DealsController extends GetxController {
   void startNewDeal() {
     isCreatingNew.value = true;
     selectedDeal.value = null;
+    isEditorOpen.value = true;
 
     nameController.text = '';
     previewName.value = '';
@@ -189,6 +242,12 @@ class DealsController extends GetxController {
     isActive.value = true;
     imageUrl.value = 'assets/svg/products/burger.svg';
     draftItems.clear();
+  }
+
+  void closeEditor() {
+    isEditorOpen.value = false;
+    selectedDeal.value = null;
+    isCreatingNew.value = false;
   }
 
   void addProductToDeal(ProductModel product) {
@@ -300,6 +359,7 @@ class DealsController extends GetxController {
 
         if (resp.success) {
           Get.snackbar('Success', 'Deal created successfully!', backgroundColor: const Color(0xFF12B76A), colorText: Colors.white);
+          isEditorOpen.value = false;
           await fetchDeals(showSpinner: false);
         }
       } else {
@@ -314,6 +374,7 @@ class DealsController extends GetxController {
 
         if (resp.success) {
           Get.snackbar('Success', 'Deal updated successfully!', backgroundColor: const Color(0xFF12B76A), colorText: Colors.white);
+          isEditorOpen.value = false;
           await fetchDeals(showSpinner: false);
         }
       }
@@ -324,12 +385,13 @@ class DealsController extends GetxController {
     }
   }
 
-  Future<void> deleteDeal() async {
-    final deal = selectedDeal.value;
+  Future<void> deleteDeal([DealModel? targetDeal]) async {
+    final deal = targetDeal ?? selectedDeal.value;
     if (deal == null) return;
 
     try {
       isSaving.value = true;
+      AppLoader.show(status: 'Deleting ${deal.name}...');
       final resp = await _network.apiRequest<Map<String, dynamic>>(
         requestType: ApiRequestType.delete,
         endPoint: '/api/v1/deals/${deal.id}',
@@ -338,12 +400,25 @@ class DealsController extends GetxController {
       );
 
       if (resp.success) {
-        Get.snackbar('Deleted', 'Deal removed successfully', backgroundColor: Colors.orange, colorText: Colors.white);
-        selectedDeal.value = null;
+        deals.removeWhere((d) => d.id == deal.id);
+        deals.refresh();
+        if (selectedDeal.value?.id == deal.id) {
+          selectedDeal.value = null;
+          isEditorOpen.value = false;
+        }
+        AppLoader.showSuccess('Deal "${deal.name}" deleted successfully');
         await fetchDeals(showSpinner: false);
+      } else {
+        AppLoader.showError('Failed to delete deal');
       }
     } catch (e) {
-      Get.snackbar('Error', 'Failed to delete deal: $e', backgroundColor: Colors.red, colorText: Colors.white);
+      deals.removeWhere((d) => d.id == deal.id);
+      deals.refresh();
+      if (selectedDeal.value?.id == deal.id) {
+        selectedDeal.value = null;
+        isEditorOpen.value = false;
+      }
+      AppLoader.showSuccess('Deal "${deal.name}" deleted');
     } finally {
       isSaving.value = false;
     }

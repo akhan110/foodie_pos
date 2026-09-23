@@ -10,6 +10,7 @@ import 'package:foodiepos/modules/orders/views/orders_view.dart';
 import 'package:foodiepos/modules/pos/controllers/pos_controller.dart';
 import 'package:foodiepos/modules/pos/widgets/new_order/dialogs/parked_orders_dialog.dart';
 import 'package:foodiepos/modules/pos/widgets/side_navigation.dart';
+import 'package:foodiepos/modules/settings/views/settings_view.dart';
 import 'package:foodiepos/modules/shell/controller/main_shell_controller.dart';
 import 'package:get/get.dart';
 
@@ -74,60 +75,55 @@ class MainShellView extends StatelessWidget {
       child: Focus(
         autofocus: true,
         child: Scaffold(
-          body: Column(
+          body: Row(
             children: [
-              SecondaryAppBar(),
+              const SideNavigation(),
               Expanded(
-                child: Row(
-                  children: [
-                    const SideNavigation(),
-                    Expanded(
-                      child: GetBuilder<MainShellController>(
-                        id: 'shell',
-                        builder: (controller) {
-                          if (controller.selectedIndex == 0) {
-                            return const DashboardView();
-                          }
+                child: GetBuilder<MainShellController>(
+                  id: 'shell',
+                  builder: (controller) {
+                    Widget currentScreen;
+                    switch (controller.selectedIndex) {
+                      case 0:
+                        currentScreen = const DashboardView();
+                        break;
+                      case 1:
+                        currentScreen = child;
+                        break;
+                      case 2:
+                        currentScreen = const OrdersView();
+                        break;
+                      case 3:
+                        currentScreen = const MenuManagementView();
+                        break;
+                      case 4:
+                        currentScreen = const DealsView();
+                        break;
+                      case 5:
+                        currentScreen = const Center(
+                          child: CustomTextWidget('Reports Screen'),
+                        );
+                        break;
+                      case 6:
+                      case 7:
+                        currentScreen = const SettingsView();
+                        break;
+                      default:
+                        currentScreen = child;
+                    }
 
-                          if (controller.selectedIndex == 1) {
-                            return child;
-                          }
+                    // Only the active POS cashier screen (New Order) requires the SecondaryAppBar
+                    if (controller.selectedIndex == 1) {
+                      return Column(
+                        children: [
+                          const SecondaryAppBar(),
+                          Expanded(child: currentScreen),
+                        ],
+                      );
+                    }
 
-                          if (controller.selectedIndex == 2) {
-                            return const OrdersView();
-                          }
-
-                          if (controller.selectedIndex == 3) {
-                            return const MenuManagementView();
-                          }
-
-                          if (controller.selectedIndex == 4) {
-                            return const DealsView();
-                          }
-
-                          if (controller.selectedIndex == 5) {
-                            return const Center(
-                              child: CustomTextWidget('Reports Screen'),
-                            );
-                          }
-
-                          if (controller.selectedIndex == 6) {
-                            return const Center(
-                              child: CustomTextWidget('Users Screen'),
-                            );
-                          }
-
-                          if (controller.selectedIndex == 7) {
-                            return const Center(
-                              child: CustomTextWidget('Settings Screen'),
-                            );
-                          }
-
-                          return const SizedBox.shrink();
-                        },
-                      ),
-                    ),
-                  ],
+                    return currentScreen;
+                  },
                 ),
               ),
             ],

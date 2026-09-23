@@ -3,6 +3,7 @@ import 'product_category.dart';
 class ProductModel {
   const ProductModel({
     required this.id,
+    this.sku,
     required this.name,
     required this.category,
     required this.price,
@@ -10,10 +11,12 @@ class ProductModel {
     this.description,
     this.isPopular = false,
     this.isCombo = false,
+    this.isKitchen = true,
     this.isActive = true,
   });
 
   final String id;
+  final String? sku;
   final String name;
   final ProductCategory category;
   final double price;
@@ -21,7 +24,10 @@ class ProductModel {
   final String? description;
   final bool isPopular;
   final bool isCombo;
+  final bool isKitchen;
   final bool isActive;
+
+  String get effectiveSku => sku ?? '${category.name.substring(0, 3).toUpperCase()}-${id.length >= 3 ? id.substring(id.length - 3).toUpperCase() : "001"}';
 
   factory ProductModel.fromJson(Map<String, dynamic> json) {
     ProductCategory parseCategory(String? cat) {
@@ -32,15 +38,20 @@ class ProductModel {
       );
     }
 
+    final catEnum = parseCategory(json['category']?.toString() ?? json['category_name']?.toString() ?? json['category_id']?.toString());
+    final rawId = json['id']?.toString() ?? '';
+
     return ProductModel(
-      id: json['id']?.toString() ?? '',
+      id: rawId,
+      sku: json['sku']?.toString() ?? '${catEnum.name.substring(0, 3).toUpperCase()}-${rawId.length >= 3 ? rawId.substring(rawId.length - 3).toUpperCase() : "001"}',
       name: json['name']?.toString() ?? '',
-      category: parseCategory(json['category']?.toString() ?? json['category_name']?.toString() ?? json['category_id']?.toString()),
+      category: catEnum,
       price: (json['price'] as num?)?.toDouble() ?? 0.0,
       description: json['description']?.toString(),
       image: json['image']?.toString() ?? 'assets/svg/products/burger.svg',
       isPopular: json['is_popular'] as bool? ?? json['isPopular'] as bool? ?? false,
       isCombo: json['is_combo'] as bool? ?? json['isCombo'] as bool? ?? false,
+      isKitchen: json['is_kitchen'] as bool? ?? json['isKitchen'] as bool? ?? true,
       isActive: json['is_active'] as bool? ?? json['isActive'] as bool? ?? true,
     );
   }
@@ -48,6 +59,7 @@ class ProductModel {
   Map<String, dynamic> toJson() {
     return {
       'id': id,
+      'sku': sku ?? effectiveSku,
       'name': name,
       'category_id': category.name,
       'category': category.name,
@@ -56,12 +68,14 @@ class ProductModel {
       'image': image,
       'is_popular': isPopular,
       'is_combo': isCombo,
+      'is_kitchen': isKitchen,
       'is_active': isActive,
     };
   }
 
   ProductModel copyWith({
     String? id,
+    String? sku,
     String? name,
     ProductCategory? category,
     double? price,
@@ -69,10 +83,12 @@ class ProductModel {
     String? description,
     bool? isPopular,
     bool? isCombo,
+    bool? isKitchen,
     bool? isActive,
   }) {
     return ProductModel(
       id: id ?? this.id,
+      sku: sku ?? this.sku,
       name: name ?? this.name,
       category: category ?? this.category,
       price: price ?? this.price,
@@ -80,6 +96,7 @@ class ProductModel {
       description: description ?? this.description,
       isPopular: isPopular ?? this.isPopular,
       isCombo: isCombo ?? this.isCombo,
+      isKitchen: isKitchen ?? this.isKitchen,
       isActive: isActive ?? this.isActive,
     );
   }

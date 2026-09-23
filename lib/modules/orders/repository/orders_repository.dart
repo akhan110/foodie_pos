@@ -15,6 +15,8 @@ abstract class IOrdersRepository {
   Future<BaseResponseModel<OrderModel>> createOrder(Map<String, dynamic> data);
 
   Future<BaseResponseModel<OrderModel>> updateOrderStatus(String orderId, String status);
+
+  Future<BaseResponseModel<bool>> deleteOrder(String orderId);
 }
 
 class OrdersRepository implements IOrdersRepository {
@@ -99,6 +101,16 @@ class OrdersRepository implements IOrdersRepository {
         }
         return OrderModel.fromJson(Map<String, dynamic>.from(data as Map));
       },
+    );
+  }
+
+  @override
+  Future<BaseResponseModel<bool>> deleteOrder(String orderId) async {
+    return await _network.apiRequest<bool>(
+      requestType: ApiRequestType.delete,
+      endPoint: '/api/v1/orders/$orderId',
+      isBearerRequired: true,
+      parser: (data) => true,
     );
   }
 }

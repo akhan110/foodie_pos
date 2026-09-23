@@ -37,7 +37,7 @@ class ShiftModel {
     return ShiftModel(
       id: json['id']?.toString() ?? '',
       cashierId: json['cashier_id']?.toString(),
-      cashierName: json['cashier_name']?.toString() ?? 'Alex Khan',
+      cashierName: json['cashier_name']?.toString() ?? 'Akhan',
       openingFloat: (json['opening_float'] as num?)?.toDouble() ?? 0.0,
       closingCash: (json['closing_cash'] as num?)?.toDouble(),
       expectedCash: (json['expected_cash'] as num?)?.toDouble() ?? 0.0,

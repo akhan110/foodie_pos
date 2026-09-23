@@ -28,6 +28,44 @@ class MockPosRepository implements IPosRepository {
   }
 
   @override
+  Future<BaseResponseModel<ProductCategoryModel>> createCategory(Map<String, dynamic> data) async {
+    return BaseResponseModel(
+      success: true,
+      message: 'Category created',
+      statusCode: 201,
+      data: ProductCategoryModel(
+        id: data['name']?.toString().toLowerCase().replaceAll(' ', '_') ?? 'cat-new',
+        name: data['name']?.toString() ?? '',
+        slug: data['name']?.toString().toLowerCase().replaceAll(' ', '_') ?? 'cat-new',
+      ),
+    );
+  }
+
+  @override
+  Future<BaseResponseModel<ProductCategoryModel>> updateCategory(String id, Map<String, dynamic> data) async {
+    return BaseResponseModel(
+      success: true,
+      message: 'Category updated',
+      statusCode: 200,
+      data: ProductCategoryModel(
+        id: id,
+        name: data['name']?.toString() ?? '',
+        slug: id,
+      ),
+    );
+  }
+
+  @override
+  Future<BaseResponseModel<dynamic>> deleteCategory(String id) async {
+    return BaseResponseModel(
+      success: true,
+      message: 'Category deleted',
+      statusCode: 200,
+      data: {'id': id},
+    );
+  }
+
+  @override
   Future<BaseResponseModel<List<ProductModel>>> getProducts({
     String? categoryId,
     bool includeInactive = false,
@@ -159,6 +197,21 @@ class MockPosRepository implements IPosRepository {
         id: id,
         name: data['name']?.toString() ?? '',
         price: (data['price'] as num?)?.toDouble() ?? 0.0,
+      ),
+    );
+  }
+
+  @override
+  Future<BaseResponseModel<ProductExtraItem>> toggleAddonStatus(String id) async {
+    return BaseResponseModel(
+      success: true,
+      message: 'Addon status toggled',
+      statusCode: 200,
+      data: ProductExtraItem(
+        id: id,
+        name: 'Toggled Addon',
+        price: 50.0,
+        isActive: true,
       ),
     );
   }

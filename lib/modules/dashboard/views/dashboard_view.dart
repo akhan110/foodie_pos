@@ -85,19 +85,81 @@ class DashboardView extends GetView<DashboardController> {
                           ],
                         ),
                         const SizedBox(height: 3),
-                        Text(
-                          "Here's what's happening at your store today.",
-                          style: TextStyle(
-                            fontSize: 13,
-                            color: colors.onSurfaceVariant,
-                          ),
-                        ),
+                        Obx(() {
+                          final isMyShift = controller.selectedScope.value == 'My Shift';
+                          return Text(
+                            isMyShift
+                                ? "Here's your personal shift performance for ${controller.cashierName}."
+                                : "Here's what's happening across the entire store.",
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: colors.onSurfaceVariant,
+                            ),
+                          );
+                        }),
                       ],
                     ),
 
-                    // Date Pill + Time Range Selector
+                    // Date Pill + Scope Toggle + Time Range Selector
                     Row(
                       children: [
+                        // Scope pill container (My Shift vs Store Overview)
+                        Obx(() {
+                          return Container(
+                            padding: const EdgeInsets.all(3),
+                            decoration: BoxDecoration(
+                              color: isDark ? const Color(0xFF1E222B) : Colors.white,
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(
+                                color: isDark ? const Color(0xFF2A313F) : const Color(0xFFEAECF0),
+                              ),
+                            ),
+                            child: Row(
+                              children: [
+                                {'label': 'My Shift', 'icon': Icons.person_outline},
+                                {'label': 'Store', 'icon': Icons.storefront_outlined},
+                              ].map((item) {
+                                final label = item['label'] as String;
+                                final icon = item['icon'] as IconData;
+                                final isSelected = controller.selectedScope.value == label;
+
+                                return InkWell(
+                                  onTap: () => controller.setScope(label),
+                                  borderRadius: BorderRadius.circular(8),
+                                  child: AnimatedContainer(
+                                    duration: const Duration(milliseconds: 150),
+                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                    decoration: BoxDecoration(
+                                      color: isSelected ? const Color(0xFFFF6B35) : Colors.transparent,
+                                      borderRadius: BorderRadius.circular(7),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(
+                                          icon,
+                                          size: 13,
+                                          color: isSelected ? Colors.white : colors.onSurfaceVariant,
+                                        ),
+                                        const SizedBox(width: 4),
+                                        Text(
+                                          label,
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                                            color: isSelected ? Colors.white : colors.onSurfaceVariant,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                );
+                              }).toList(),
+                            ),
+                          );
+                        }),
+                        const SizedBox(width: 10),
+
                         // Date picker button pill
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),

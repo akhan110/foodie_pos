@@ -127,6 +127,17 @@ class MockOrdersRepository implements IOrdersRepository {
     }
     throw Exception('Order not found');
   }
+
+  @override
+  Future<BaseResponseModel<bool>> deleteOrder(String orderId) async {
+    mockOrders.removeWhere((o) => o.id == orderId || o.orderNumber == orderId);
+    return BaseResponseModel<bool>(
+      success: true,
+      message: 'Deleted',
+      data: true,
+      statusCode: 200,
+    );
+  }
 }
 
 void main() {
@@ -209,6 +220,21 @@ void main() {
     test('6. Export CSV generates export without crash', () async {
       await controller.loadOrders();
       expect(() => controller.exportCsv(), returnsNormally);
+    });
+
+    test('7. Deleting an order removes it from list and closes details view', () async {
+      await controller.loadOrders();
+      expect(controller.orders.length, 4);
+
+      final target = controller.orders.first;
+      controller.selectOrder(target);
+      expect(controller.isViewingDetails.value, true);
+
+      await controller.deleteOrder(target);
+      expect(controller.orders.length, 3);
+      expect(controller.orders.any((o) => o.id == target.id), false);
+      expect(controller.selectedOrder.value, isNull);
+      expect(controller.isViewingDetails.value, false);
     });
   });
 }

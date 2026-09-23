@@ -1,21 +1,39 @@
 import 'package:flutter/material.dart';
+import 'package:foodiepos/app/constants/storage_keys.dart';
 import 'package:foodiepos/app/theme/app_colors.dart';
+import 'package:foodiepos/app/widgets/custom_text_widget.dart';
+import 'package:foodiepos/modules/shell/controller/main_shell_controller.dart';
 import 'package:foodiepos/modules/shifts/controllers/shift_controller.dart';
 import 'package:get/get.dart';
+import 'package:get_storage/get_storage.dart';
 
 class CloseShiftDialog extends StatefulWidget {
   final ShiftController controller;
+  final bool logoutOnClose;
 
-  const CloseShiftDialog({super.key, required this.controller});
+  const CloseShiftDialog({
+    super.key,
+    required this.controller,
+    this.logoutOnClose = true,
+  });
 
-  static void show(BuildContext context, ShiftController controller) {
-    Get.dialog(
-      Dialog(
+  static Future<void> show(
+    BuildContext context,
+    ShiftController controller, {
+    bool logoutOnClose = true,
+  }) {
+    return showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (context) => Dialog(
         backgroundColor: Colors.transparent,
         insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 480, maxHeight: 680),
-          child: CloseShiftDialog(controller: controller),
+          constraints: const BoxConstraints(maxWidth: 480, maxHeight: 720),
+          child: CloseShiftDialog(
+            controller: controller,
+            logoutOnClose: logoutOnClose,
+          ),
         ),
       ),
     );
@@ -30,6 +48,7 @@ class _CloseShiftDialogState extends State<CloseShiftDialog> {
   final TextEditingController notesController = TextEditingController();
 
   double countedCash = 0.0;
+  bool isSubmitting = false;
 
   @override
   void initState() {
@@ -49,46 +68,33 @@ class _CloseShiftDialogState extends State<CloseShiftDialog> {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
     final colors = theme.colorScheme;
+    final storage = GetStorage();
+    final activeCashier = storage.read(StorageKeys.cashierName) ?? 'Akhan';
 
     return Obx(() {
       final shift = widget.controller.currentShift.value;
 
-      if (shift == null) {
-        return Container(
-          padding: const EdgeInsets.all(24),
-          decoration: BoxDecoration(
-            color: isDark ? const Color(0xFF1E222B) : Colors.white,
-            borderRadius: BorderRadius.circular(16),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text('No Active Shift Found', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-              const SizedBox(height: 12),
-              ElevatedButton(onPressed: () => Get.back(), child: const Text('Close')),
-            ],
-          ),
-        );
-      }
-
-      final openingFloat = shift.openingFloat;
-      final expectedCash = shift.expectedCash;
-      final totalSales = shift.totalSales;
-      final cashSales = shift.cashSales;
-      final cardSales = shift.cardSales;
-      final totalOrders = shift.totalOrders;
-      final diff = countedCash - expectedCash;
+      final openingFloat = shift?.openingFloat ?? 5000.0;
+      final expectedCash = shift?.expectedCash ?? openingFloat;
+      final totalSales = shift?.totalSales ?? 0.0;
+      final cashSales = shift?.cashSales ?? 0.0;
+      final cardSales = shift?.cardSales ?? 0.0;
+      final totalOrders = shift?.totalOrders ?? 0;
+      final cashierName = shift?.cashierName ?? activeCashier;
 
       return Container(
         padding: const EdgeInsets.all(24),
         decoration: BoxDecoration(
-          color: isDark ? const Color(0xFF1E222B) : Colors.white,
-          borderRadius: BorderRadius.circular(16),
+          color: isDark ? const Color(0xFF1B1E26) : Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: isDark ? const Color(0xFF2D333F) : const Color(0xFFE5E7EB),
+          ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.35),
-              blurRadius: 24,
-              offset: const Offset(0, 10),
+              color: Colors.black.withValues(alpha: isDark ? 0.45 : 0.12),
+              blurRadius: 36,
+              offset: const Offset(0, 16),
             ),
           ],
         ),
@@ -97,179 +103,281 @@ class _CloseShiftDialogState extends State<CloseShiftDialog> {
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
+              // ============================================================
+              // 1. TOP HEADER: Lock Icon, Title, Subtitle, Close Icon
+              // ============================================================
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
                     children: [
                       Container(
-                        padding: const EdgeInsets.all(8),
+                        padding: const EdgeInsets.all(10),
                         decoration: BoxDecoration(
-                          color: Colors.redAccent.withValues(alpha: 0.15),
-                          borderRadius: BorderRadius.circular(10),
+                          color: const Color(0xFFEF4444).withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(12),
                         ),
-                        child: const Icon(Icons.lock_clock_rounded, color: Colors.redAccent, size: 22),
+                        child: const Icon(
+                          Icons.lock_clock_rounded,
+                          color: Color(0xFFEF4444),
+                          size: 22,
+                        ),
                       ),
-                      const SizedBox(width: 12),
+                      const SizedBox(width: 14),
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
+                          CustomTextWidget(
                             'Close Shift & Reconcile',
-                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                            style: TextStyle(
+                              fontWeight: FontWeight.w800,
+                              fontSize: 17,
+                              color: colors.onSurface,
+                            ),
                           ),
-                          Text(
-                            'Cashier: ${shift.cashierName}',
-                            style: TextStyle(fontSize: 12, color: colors.onSurfaceVariant),
+                          const SizedBox(height: 2),
+                          CustomTextWidget(
+                            'Cashier: $cashierName',
+                            style: TextStyle(
+                              fontSize: 12.5,
+                              color: colors.onSurfaceVariant,
+                            ),
                           ),
                         ],
                       ),
                     ],
                   ),
-                  IconButton(icon: const Icon(Icons.close, size: 18), onPressed: () => Get.back()),
+                  InkWell(
+                    onTap: () => Navigator.of(context).pop(),
+                    borderRadius: BorderRadius.circular(20),
+                    child: Padding(
+                      padding: const EdgeInsets.all(4),
+                      child: Icon(
+                        Icons.close,
+                        size: 20,
+                        color: colors.onSurfaceVariant,
+                      ),
+                    ),
+                  ),
                 ],
               ),
-              const SizedBox(height: 16),
-              Divider(height: 1, color: theme.dividerColor.withValues(alpha: 0.4)),
-              const SizedBox(height: 14),
 
-              // Shift summary card
+              const SizedBox(height: 18),
+
+              // ============================================================
+              // 2. SUMMARY CARD (RECONCILIATION)
+              // ============================================================
               Container(
-                padding: const EdgeInsets.all(14),
+                padding: const EdgeInsets.all(18),
                 decoration: BoxDecoration(
-                  color: colors.surfaceContainer,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: theme.dividerColor.withValues(alpha: 0.5)),
+                  color: isDark ? const Color(0xFF141720) : const Color(0xFFF9FAFB),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                    color: isDark ? const Color(0xFF282D3A) : const Color(0xFFE5E7EB),
+                  ),
                 ),
                 child: Column(
                   children: [
-                    _summaryRow('Opening Cash Float', 'Rs ${openingFloat.toStringAsFixed(0)}'),
-                    _summaryRow('Total Orders Completed', '$totalOrders orders'),
-                    _summaryRow('Cash Sales', 'Rs ${cashSales.toStringAsFixed(0)}'),
-                    _summaryRow('Card / Digital Sales', 'Rs ${cardSales.toStringAsFixed(0)}'),
-                    _summaryRow('Gross Sales Revenue', 'Rs ${totalSales.toStringAsFixed(0)}', isBold: true),
-                    const Divider(height: 16),
+                    _summaryRow('Opening Cash Float', 'Rs ${openingFloat.toStringAsFixed(0)}', colors),
+                    const SizedBox(height: 8),
+                    _summaryRow('Total Orders Completed', '$totalOrders orders', colors),
+                    const SizedBox(height: 8),
+                    _summaryRow('Cash Sales', 'Rs ${cashSales.toStringAsFixed(0)}', colors),
+                    const SizedBox(height: 8),
+                    _summaryRow('Card / Digital Sales', 'Rs ${cardSales.toStringAsFixed(0)}', colors),
+                    const SizedBox(height: 8),
+                    _summaryRow(
+                      'Gross Sales Revenue',
+                      'Rs ${totalSales.toStringAsFixed(0)}',
+                      colors,
+                      isBold: true,
+                    ),
+                    const SizedBox(height: 16),
                     _summaryRow(
                       'Expected Cash in Drawer',
                       'Rs ${expectedCash.toStringAsFixed(0)}',
+                      colors,
                       isBold: true,
-                      highlightColor: AppColors.primary,
+                      valueColor: AppColors.primary,
+                      fontSize: 14,
                     ),
                   ],
                 ),
               ),
+
+              const SizedBox(height: 18),
+
+              // ============================================================
+              // 3. ACTUAL CASH COUNTED IN DRAWER
+              // ============================================================
+              Text(
+                'Actual Cash Counted in Drawer *',
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                  color: colors.onSurface,
+                ),
+              ),
+              const SizedBox(height: 8),
+              TextField(
+                controller: closingCashController,
+                keyboardType: TextInputType.number,
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: colors.onSurface,
+                ),
+                onChanged: (val) {
+                  setState(() {
+                    countedCash = double.tryParse(val.replaceAll(RegExp(r'[^0-9.]'), '')) ?? 0.0;
+                  });
+                },
+                decoration: InputDecoration(
+                  hintText: 'Enter counted amount',
+                  hintStyle: TextStyle(
+                    fontSize: 13,
+                    color: colors.onSurfaceVariant.withValues(alpha: 0.6),
+                  ),
+                  filled: true,
+                  fillColor: isDark ? const Color(0xFF141720) : const Color(0xFFF3F4F6),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                    borderSide: BorderSide(
+                      color: isDark ? const Color(0xFF282D3A) : const Color(0xFFE5E7EB),
+                    ),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                    borderSide: BorderSide(
+                      color: isDark ? const Color(0xFF282D3A) : const Color(0xFFE5E7EB),
+                    ),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                    borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
+                  ),
+                ),
+              ),
+
               const SizedBox(height: 16),
 
-              // Actual Cash Counted input
-              Text('Actual Cash Counted in Drawer *', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: colors.onSurface)),
-              const SizedBox(height: 6),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14),
-                decoration: BoxDecoration(
-                  color: colors.surfaceContainer,
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: theme.dividerColor.withValues(alpha: 0.6)),
+              // ============================================================
+              // 4. CLOSING NOTES / REMARKS
+              // ============================================================
+              Text(
+                'Closing Notes / Remarks',
+                style: TextStyle(
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w500,
+                  color: colors.onSurfaceVariant,
                 ),
-                child: TextField(
-                  controller: closingCashController,
-                  keyboardType: TextInputType.number,
-                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                  onChanged: (val) {
-                    setState(() {
-                      countedCash = double.tryParse(val.replaceAll(RegExp(r'[^0-9.]'), '')) ?? 0.0;
-                    });
-                  },
-                  decoration: const InputDecoration(
-                    border: InputBorder.none,
-                    prefixText: 'Rs ',
-                    hintText: 'Enter counted amount',
-                    prefixStyle: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 8),
+              TextField(
+                controller: notesController,
+                maxLines: 2,
+                style: TextStyle(
+                  fontSize: 13,
+                  color: colors.onSurface,
+                ),
+                decoration: InputDecoration(
+                  hintText: 'e.g. End of shift, handed drawer to Evening Cashier',
+                  hintStyle: TextStyle(
+                    fontSize: 12.5,
+                    color: colors.onSurfaceVariant.withValues(alpha: 0.5),
+                  ),
+                  filled: true,
+                  fillColor: isDark ? const Color(0xFF141720) : const Color(0xFFF3F4F6),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                    borderSide: BorderSide(
+                      color: isDark ? const Color(0xFF282D3A) : const Color(0xFFE5E7EB),
+                    ),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                    borderSide: BorderSide(
+                      color: isDark ? const Color(0xFF282D3A) : const Color(0xFFE5E7EB),
+                    ),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                    borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
                   ),
                 ),
               ),
-              const SizedBox(height: 10),
 
-              // Variance indicator
-              if (closingCashController.text.isNotEmpty)
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: diff == 0
-                        ? Colors.green.withValues(alpha: 0.15)
-                        : (diff > 0 ? Colors.blue.withValues(alpha: 0.15) : Colors.red.withValues(alpha: 0.15)),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(
-                        diff == 0 ? Icons.check_circle : (diff > 0 ? Icons.arrow_upward : Icons.warning_rounded),
-                        color: diff == 0 ? Colors.green : (diff > 0 ? Colors.blue : Colors.red),
-                        size: 16,
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        diff == 0
-                            ? 'Balanced (Rs 0.00 difference)'
-                            : (diff > 0
-                                ? 'Cash Over: +Rs ${diff.toStringAsFixed(0)}'
-                                : 'Cash Short: -Rs ${(-diff).toStringAsFixed(0)}'),
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 12,
-                          color: diff == 0 ? Colors.green : (diff > 0 ? Colors.blue : Colors.red),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              const SizedBox(height: 14),
+              const SizedBox(height: 24),
 
-              // Shift Notes
-              Text('Closing Notes / Remarks', style: TextStyle(fontSize: 12, color: colors.onSurfaceVariant)),
-              const SizedBox(height: 6),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14),
-                decoration: BoxDecoration(
-                  color: colors.surfaceContainer,
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: theme.dividerColor.withValues(alpha: 0.6)),
-                ),
-                child: TextField(
-                  controller: notesController,
-                  style: TextStyle(fontSize: 13, color: colors.onSurface),
-                  decoration: InputDecoration(
-                    hintText: 'e.g. End of shift, handed drawer to Evening Cashier',
-                    hintStyle: TextStyle(fontSize: 12, color: colors.onSurfaceVariant),
-                    border: InputBorder.none,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 20),
-
-              // Bottom Actions
+              // ============================================================
+              // 5. BOTTOM ACTIONS: Cancel & Close & End Shift
+              // ============================================================
               Row(
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
                   TextButton(
-                    onPressed: () => Get.back(),
-                    child: const Text('Cancel'),
-                  ),
-                  const SizedBox(width: 10),
-                  ElevatedButton.icon(
-                    onPressed: () async {
-                      final amount = double.tryParse(closingCashController.text.trim()) ?? 0.0;
-                      final success = await widget.controller.closeShift(amount, notes: notesController.text.trim());
-                      if (success) {
-                        Get.back();
-                      }
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.redAccent,
-                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    onPressed: () => Navigator.of(context).pop(),
+                    child: Text(
+                      'Cancel',
+                      style: TextStyle(
+                        fontSize: 13.5,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.primary,
+                      ),
                     ),
-                    icon: const Icon(Icons.lock_rounded, size: 16, color: Colors.white),
-                    label: const Text('Close & End Shift', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                  ),
+                  const SizedBox(width: 14),
+                  ElevatedButton.icon(
+                    onPressed: isSubmitting
+                        ? null
+                        : () async {
+                            setState(() => isSubmitting = true);
+                            final amount = double.tryParse(closingCashController.text.trim()) ?? expectedCash;
+                            final notes = notesController.text.trim();
+
+                            await widget.controller.closeShift(amount, notes: notes);
+
+                            Get.back();
+
+                            if (widget.logoutOnClose) {
+                              if (Get.isRegistered<MainShellController>()) {
+                                await Get.find<MainShellController>().logout();
+                              } else {
+                                final shellCtrl = Get.put(MainShellController());
+                                await shellCtrl.logout();
+                              }
+                            }
+                          },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFEF4444),
+                      foregroundColor: Colors.white,
+                      elevation: 0,
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                    ),
+                    icon: isSubmitting
+                        ? const SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
+                        : const Icon(Icons.lock_rounded, size: 16, color: Colors.white),
+                    label: Text(
+                      'Close & End Shift',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 13.5,
+                      ),
+                    ),
                   ),
                 ],
               ),
@@ -280,23 +388,34 @@ class _CloseShiftDialogState extends State<CloseShiftDialog> {
     });
   }
 
-  Widget _summaryRow(String label, String value, {bool isBold = false, Color? highlightColor}) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 3),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(label, style: TextStyle(fontSize: 12, fontWeight: isBold ? FontWeight.bold : FontWeight.normal)),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: isBold ? FontWeight.bold : FontWeight.normal,
-              color: highlightColor,
-            ),
+  Widget _summaryRow(
+    String label,
+    String value,
+    ColorScheme colors, {
+    bool isBold = false,
+    Color? valueColor,
+    double fontSize = 13,
+  }) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: fontSize,
+            fontWeight: isBold ? FontWeight.w700 : FontWeight.w500,
+            color: colors.onSurface,
           ),
-        ],
-      ),
+        ),
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: fontSize,
+            fontWeight: isBold ? FontWeight.w800 : FontWeight.w600,
+            color: valueColor ?? colors.onSurface,
+          ),
+        ),
+      ],
     );
   }
 }

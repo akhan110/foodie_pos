@@ -3,6 +3,7 @@ import 'package:foodiepos/app/routes/app_routes.dart';
 import 'package:foodiepos/app/utils/app_loader.dart';
 import 'package:foodiepos/data/models/cashier_model.dart';
 import 'package:foodiepos/modules/login/repository/login_repository.dart';
+import 'package:foodiepos/modules/shifts/controllers/shift_controller.dart';
 import 'package:foodiepos/services/network/api_exception.dart';
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
@@ -39,7 +40,7 @@ class LoginController extends GetxController {
         selectedCashier.value = match ?? cashiers.first;
       } else {
         cashiers.assignAll([
-          CashierModel(id: 'alex-khan', name: 'Alex Khan', role: 'Cashier', storeName: 'Store #01', isActive: true),
+          CashierModel(id: 'alex-khan', name: 'Akhan', role: 'Cashier', storeName: 'Store #01', isActive: true),
           CashierModel(id: 'sarah-smith', name: 'Sarah Smith', role: 'Manager', storeName: 'Store #01', isActive: true),
           CashierModel(id: 'akhan', name: 'Akhan', role: 'manager', storeName: 'Kucks', isActive: true),
         ]);
@@ -47,7 +48,7 @@ class LoginController extends GetxController {
       }
     } catch (e) {
       cashiers.assignAll([
-        CashierModel(id: 'alex-khan', name: 'Alex Khan', role: 'Cashier', storeName: 'Store #01', isActive: true),
+        CashierModel(id: 'alex-khan', name: 'Akhan', role: 'Cashier', storeName: 'Store #01', isActive: true),
         CashierModel(id: 'sarah-smith', name: 'Sarah Smith', role: 'Manager', storeName: 'Store #01', isActive: true),
         CashierModel(id: 'akhan', name: 'Akhan', role: 'manager', storeName: 'Kucks', isActive: true),
       ]);
@@ -132,7 +133,15 @@ class LoginController extends GetxController {
         errorMessage.value = '';
 
         // Navigate to POS
-        Get.offNamed(AppRoutes.pos);
+        await Get.offNamed(AppRoutes.pos);
+
+        // Prompt Open Shift dialog if no shift is currently open
+        Future.delayed(const Duration(milliseconds: 350), () {
+          if (!Get.isRegistered<ShiftController>()) {
+            Get.put(ShiftController());
+          }
+          Get.find<ShiftController>().checkAndPromptOpenShift();
+        });
       } else {
         final msg = response.message.isNotEmpty
             ? response.message

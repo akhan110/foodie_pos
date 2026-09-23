@@ -9,14 +9,18 @@ class SideNavigation extends GetView<MainShellController> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 180,
+      width: 200,
       decoration: BoxDecoration(
         color: AppColors.sidebar(context),
         border: Border(
-          right: BorderSide(color: Theme.of(context).dividerColor),
+          right: BorderSide(
+            color: Theme.of(context).brightness == Brightness.dark
+                ? const Color(0xFF29384B)
+                : const Color(0xFFE2E8F0),
+          ),
         ),
       ),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 20),
       child: GetBuilder<MainShellController>(
         id: 'shell',
         builder: (controller) {
@@ -29,7 +33,7 @@ class SideNavigation extends GetView<MainShellController> {
                 isSelected: controller.selectedIndex == 0,
                 onTap: () => controller.changePage(0),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 6),
 
               _SideNavItem(
                 icon: Icons.shopping_cart_outlined,
@@ -37,7 +41,7 @@ class SideNavigation extends GetView<MainShellController> {
                 isSelected: controller.selectedIndex == 1,
                 onTap: () => controller.changePage(1),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 6),
 
               _SideNavItem(
                 icon: Icons.receipt_long_outlined,
@@ -45,7 +49,7 @@ class SideNavigation extends GetView<MainShellController> {
                 isSelected: controller.selectedIndex == 2,
                 onTap: () => controller.changePage(2),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 6),
 
               _SideNavItem(
                 icon: Icons.restaurant_menu_outlined,
@@ -53,15 +57,15 @@ class SideNavigation extends GetView<MainShellController> {
                 isSelected: controller.selectedIndex == 3,
                 onTap: () => controller.changePage(3),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 6),
 
               _SideNavItem(
-                icon: Icons.card_giftcard_outlined,
+                icon: Icons.local_offer_outlined,
                 title: 'Deals',
                 isSelected: controller.selectedIndex == 4,
                 onTap: () => controller.changePage(4),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 6),
 
               _SideNavItem(
                 icon: Icons.bar_chart_outlined,
@@ -69,21 +73,13 @@ class SideNavigation extends GetView<MainShellController> {
                 isSelected: controller.selectedIndex == 5,
                 onTap: () => controller.changePage(5),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 6),
 
               _SideNavItem(
-                icon: Icons.people_outline,
-                title: 'Users',
+                icon: Icons.tune_outlined,
+                title: 'Settings',
                 isSelected: controller.selectedIndex == 6,
                 onTap: () => controller.changePage(6),
-              ),
-              const SizedBox(height: 8),
-
-              _SideNavItem(
-                icon: Icons.settings_outlined,
-                title: 'Settings',
-                isSelected: controller.selectedIndex == 7,
-                onTap: () => controller.changePage(7),
               ),
 
               const Spacer(),
@@ -115,13 +111,13 @@ class _SideNavItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final ColorScheme colorScheme = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(10),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         decoration: BoxDecoration(
           color: isSelected ? AppColors.primary : Colors.transparent,
           borderRadius: BorderRadius.circular(10),
@@ -132,18 +128,22 @@ class _SideNavItem extends StatelessWidget {
               icon,
               size: 20,
               color: isSelected
-                  ? colorScheme.onPrimary
-                  : colorScheme.onSurfaceVariant,
+                  ? Colors.white
+                  : (isDark
+                      ? const Color(0xFF94A3B8)
+                      : const Color(0xFF64748B)),
             ),
-            const SizedBox(width: 10),
+            const SizedBox(width: 12),
             Text(
               title,
               style: TextStyle(
                 fontSize: 14,
-                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
                 color: isSelected
-                    ? colorScheme.onPrimary
-                    : colorScheme.onSurface,
+                    ? Colors.white
+                    : (isDark
+                        ? const Color(0xFFE2E8F0)
+                        : const Color(0xFF334155)),
               ),
             ),
           ],

@@ -477,6 +477,8 @@ class OrdersTableWidget extends GetView<OrdersController> {
                       controller.reprintReceipt(order);
                     } else if (action == 'void') {
                       controller.voidOrder(order);
+                    } else if (action == 'delete') {
+                      _confirmDeleteOrder(context, order);
                     }
                   },
                   itemBuilder: (context) => [
@@ -514,12 +516,52 @@ class OrdersTableWidget extends GetView<OrdersController> {
                           ],
                         ),
                       ),
+                    const PopupMenuItem(
+                      value: 'delete',
+                      child: Row(
+                        children: [
+                          Icon(Icons.delete_outline, size: 16, color: AppColors.error),
+                          SizedBox(width: 8),
+                          CustomTextWidget(
+                            'Delete Order',
+                            style: TextStyle(fontSize: 13, color: AppColors.error),
+                          ),
+                        ],
+                      ),
+                    ),
                   ],
                 ),
               ),
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  void _confirmDeleteOrder(BuildContext context, OrderModel order) {
+    Get.dialog(
+      AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+        title: const Text('Delete Order?', style: TextStyle(fontWeight: FontWeight.bold)),
+        content: Text('Are you sure you want to delete order ${order.orderNumber}? This action cannot be undone.'),
+        actions: [
+          TextButton(
+            onPressed: () => Get.back(),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Get.back();
+              controller.deleteOrder(order);
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.error,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            ),
+            child: const Text('Delete', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+          ),
+        ],
       ),
     );
   }

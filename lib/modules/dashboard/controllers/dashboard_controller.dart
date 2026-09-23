@@ -12,6 +12,7 @@ class DashboardController extends GetxController {
   final Rx<DashboardModel?> data = Rx<DashboardModel?>(null);
   final RxBool isLoading = false.obs;
   final RxString selectedTimeRange = 'Today'.obs; // 'Today', 'This Week', 'This Month'
+  final RxString selectedScope = 'My Shift'.obs; // 'My Shift', 'Store'
   final RxInt hoveredHourIndex = 4.obs; // Default selected 12:00 PM (index 4)
 
   String get cashierName {
@@ -21,6 +22,12 @@ class DashboardController extends GetxController {
       return name.split(' ').first;
     }
     return 'Alex';
+  }
+
+  String get fullCashierName {
+    final storage = GetStorage();
+    final name = storage.read(StorageKeys.cashierName) as String?;
+    return (name != null && name.trim().isNotEmpty) ? name : 'Akhan';
   }
 
   @override
@@ -33,10 +40,15 @@ class DashboardController extends GetxController {
     try {
       if (showSpinner) isLoading.value = true;
 
+      final queryParams = <String, dynamic>{'range': selectedTimeRange.value};
+      if (selectedScope.value == 'My Shift') {
+        queryParams['cashier_name'] = fullCashierName;
+      }
+
       final response = await _network.apiRequest<Map<String, dynamic>>(
         requestType: ApiRequestType.get,
         endPoint: '/api/v1/analytics/overview',
-        queryParameters: {'range': selectedTimeRange.value},
+        queryParameters: queryParams,
         isBearerRequired: false,
         parser: (json) => json is Map<String, dynamic> ? json : {},
       );
@@ -57,6 +69,12 @@ class DashboardController extends GetxController {
   void setTimeRange(String range) {
     selectedTimeRange.value = range;
     fetchAnalytics(showSpinner: false);
+  }
+
+  void setScope(String scope) {
+    if (selectedScope.value == scope) return;
+    selectedScope.value = scope;
+    fetchAnalytics(showSpinner: true);
   }
 
   void _setExactVisualData() {

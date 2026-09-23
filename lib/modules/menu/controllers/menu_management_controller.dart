@@ -18,6 +18,9 @@ class MenuManagementController extends GetxController {
   final RxList<ProductModel> filteredProducts = <ProductModel>[].obs;
   final RxList<ProductCategoryModel> categories = <ProductCategoryModel>[].obs;
 
+  // Tabs: 0 = Products, 1 = Categories & Add-ons
+  final RxInt selectedTab = 0.obs;
+
   final RxString selectedCategory = 'all'.obs;
   final RxString searchQuery = ''.obs;
 
@@ -30,15 +33,21 @@ class MenuManagementController extends GetxController {
   final RxBool isCreatingNew = false.obs;
 
   final TextEditingController nameController = TextEditingController();
+  final TextEditingController skuController = TextEditingController();
   final TextEditingController priceController = TextEditingController();
   final TextEditingController descriptionController = TextEditingController();
   final RxString formCategory = 'burgers'.obs;
   final RxBool formIsAvailable = true.obs;
+  final RxBool formIsKitchen = true.obs;
   final RxString formImage = 'assets/svg/products/burger.svg'.obs;
 
-  // Add-ons for current category/product
+  // Add-ons for current category/product editor
   final RxList<ProductExtraItem> currentAddons = <ProductExtraItem>[].obs;
   final RxBool isLoadingAddons = false.obs;
+
+  // All Add-ons for Categories & Add-ons view
+  final RxList<ProductExtraItem> allAddons = <ProductExtraItem>[].obs;
+  final RxBool isLoadingAllAddons = false.obs;
 
   // Sizes for current category/product
   final RxList<ProductSizeOption> currentSizes = <ProductSizeOption>[].obs;
@@ -53,6 +62,7 @@ class MenuManagementController extends GetxController {
   @override
   void onClose() {
     nameController.dispose();
+    skuController.dispose();
     priceController.dispose();
     descriptionController.dispose();
     super.onClose();
@@ -84,6 +94,7 @@ class MenuManagementController extends GetxController {
       }
 
       _applyFilters();
+      loadAllAddons();
 
       // Default select first product if available
       if (products.isNotEmpty && selectedProduct.value == null && !isCreatingNew.value) {
@@ -97,6 +108,34 @@ class MenuManagementController extends GetxController {
       }
     } finally {
       isLoading.value = false;
+    }
+  }
+
+  Future<void> loadAllAddons() async {
+    try {
+      isLoadingAllAddons.value = true;
+      final res = await _repository.getAddons();
+      if (res.success && res.data != null && res.data!.isNotEmpty) {
+        allAddons.assignAll(res.data!);
+      } else {
+        allAddons.assignAll([
+          const ProductExtraItem(id: 'b_cheese', name: 'Extra cheese', price: 90.0, isActive: true),
+          const ProductExtraItem(id: 'b_jalapenos', name: 'Jalapeños', price: 60.0, isActive: true),
+          const ProductExtraItem(id: 'b_patty', name: 'Extra patty', price: 220.0, isActive: true),
+          const ProductExtraItem(id: 'b_sauce', name: 'Special sauce', price: 50.0, isActive: true),
+          const ProductExtraItem(id: 's_fries', name: 'Large fries upgrade', price: 120.0, isActive: true),
+        ]);
+      }
+    } catch (_) {
+      allAddons.assignAll([
+        const ProductExtraItem(id: 'b_cheese', name: 'Extra cheese', price: 90.0, isActive: true),
+        const ProductExtraItem(id: 'b_jalapenos', name: 'Jalapeños', price: 60.0, isActive: true),
+        const ProductExtraItem(id: 'b_patty', name: 'Extra patty', price: 220.0, isActive: true),
+        const ProductExtraItem(id: 'b_sauce', name: 'Special sauce', price: 50.0, isActive: true),
+        const ProductExtraItem(id: 's_fries', name: 'Large fries upgrade', price: 120.0, isActive: true),
+      ]);
+    } finally {
+      isLoadingAllAddons.value = false;
     }
   }
 
@@ -137,10 +176,12 @@ class MenuManagementController extends GetxController {
     selectedProduct.value = product;
 
     nameController.text = product.name;
+    skuController.text = product.sku ?? product.effectiveSku;
     priceController.text = product.price.toStringAsFixed(0);
     descriptionController.text = product.description ?? _getDefaultDescription(product.category.name);
     formCategory.value = product.category.name.toLowerCase();
     formIsAvailable.value = product.isActive;
+    formIsKitchen.value = product.isKitchen;
     formImage.value = product.image;
 
     fetchAddonsForCategory(product.category.name.toLowerCase());
@@ -151,11 +192,14 @@ class MenuManagementController extends GetxController {
     isCreatingNew.value = true;
     selectedProduct.value = null;
 
+    final defaultCat = categories.isNotEmpty ? categories.first.id : 'burgers';
     nameController.clear();
+    skuController.text = '${defaultCat.substring(0, defaultCat.length >= 3 ? 3 : defaultCat.length).toUpperCase()}-001';
     priceController.clear();
     descriptionController.clear();
-    formCategory.value = categories.isNotEmpty ? categories.first.id : 'burgers';
+    formCategory.value = defaultCat;
     formIsAvailable.value = true;
+    formIsKitchen.value = true;
     formImage.value = _getImageForCategory(formCategory.value);
 
     fetchAddonsForCategory(formCategory.value);
@@ -165,6 +209,9 @@ class MenuManagementController extends GetxController {
   void onCategoryFormChanged(String newCat) {
     formCategory.value = newCat;
     formImage.value = _getImageForCategory(newCat);
+    if (isCreatingNew.value) {
+      skuController.text = '${newCat.substring(0, newCat.length >= 3 ? 3 : newCat.length).toUpperCase()}-001';
+    }
     fetchAddonsForCategory(newCat);
     fetchSizesForCategory(newCat);
   }
@@ -211,6 +258,7 @@ class MenuManagementController extends GetxController {
 
   Future<void> saveProduct() async {
     final name = nameController.text.trim();
+    final sku = skuController.text.trim();
     final price = double.tryParse(priceController.text.trim()) ?? 0.0;
     final description = descriptionController.text.trim();
 
@@ -229,11 +277,13 @@ class MenuManagementController extends GetxController {
 
       final payload = {
         'name': name,
+        'sku': sku.isNotEmpty ? sku : null,
         'category_id': formCategory.value,
         'price': price,
         'description': description,
         'image': formImage.value,
         'is_active': formIsAvailable.value,
+        'is_kitchen': formIsKitchen.value,
       };
 
       if (isCreatingNew.value) {
@@ -260,6 +310,7 @@ class MenuManagementController extends GetxController {
         } else {
           updated = current.copyWith(
             name: name,
+            sku: sku,
             category: ProductCategory.values.firstWhere(
               (e) => e.name.toLowerCase() == formCategory.value.toLowerCase(),
               orElse: () => ProductCategory.burgers,
@@ -268,6 +319,7 @@ class MenuManagementController extends GetxController {
             description: description,
             image: formImage.value,
             isActive: formIsAvailable.value,
+            isKitchen: formIsKitchen.value,
           );
         }
 
@@ -286,6 +338,120 @@ class MenuManagementController extends GetxController {
       _showNotification('Error', 'Failed to save product: $e', isError: true);
     } finally {
       isSaving.value = false;
+    }
+  }
+
+  // ============================================================
+  // CATEGORIES CRUD
+  // ============================================================
+  Future<void> createCategory(String name) async {
+    final cleanName = name.trim();
+    if (cleanName.isEmpty) return;
+
+    try {
+      final res = await _repository.createCategory({
+        'name': cleanName,
+        'sort_order': categories.length,
+      });
+
+      if (res.success && res.data != null) {
+        categories.add(res.data!);
+      } else {
+        categories.add(ProductCategoryModel(
+          id: cleanName.toLowerCase().replaceAll(' ', '_'),
+          name: cleanName,
+          slug: cleanName.toLowerCase().replaceAll(' ', '_'),
+          productCount: 0,
+        ));
+      }
+      _showNotification('Success', 'Category "$cleanName" created');
+    } catch (e) {
+      _showNotification('Error', 'Failed to create category: $e', isError: true);
+    }
+  }
+
+  Future<void> updateCategory(String id, String name) async {
+    final cleanName = name.trim();
+    if (cleanName.isEmpty) return;
+
+    try {
+      final res = await _repository.updateCategory(id, {'name': cleanName});
+      if (res.success && res.data != null) {
+        final idx = categories.indexWhere((c) => c.id == id);
+        if (idx >= 0) categories[idx] = res.data!;
+      } else {
+        final idx = categories.indexWhere((c) => c.id == id);
+        if (idx >= 0) categories[idx] = categories[idx].copyWith(name: cleanName);
+      }
+      _showNotification('Success', 'Category updated');
+    } catch (e) {
+      _showNotification('Error', 'Failed to update category: $e', isError: true);
+    }
+  }
+
+  Future<void> deleteCategory(String id) async {
+    try {
+      await _repository.deleteCategory(id);
+      categories.removeWhere((c) => c.id == id);
+      products.removeWhere((p) => p.category.name.toLowerCase() == id.toLowerCase());
+      _applyFilters();
+      _showNotification('Deleted', 'Category deleted');
+    } catch (e) {
+      _showNotification('Error', 'Failed to delete category: $e', isError: true);
+    }
+  }
+
+  // ============================================================
+  // GLOBAL ADD-ONS CRUD & TOGGLE
+  // ============================================================
+  Future<void> toggleAddon(ProductExtraItem addon) async {
+    final newStatus = !addon.isActive;
+    final updated = addon.copyWith(isActive: newStatus);
+
+    final idx = allAddons.indexWhere((a) => a.id == addon.id);
+    if (idx >= 0) allAddons[idx] = updated;
+
+    try {
+      await _repository.toggleAddonStatus(addon.id);
+    } catch (_) {}
+  }
+
+  Future<void> createAddonGlobal(String name, double price, {String? categoryId}) async {
+    final cleanName = name.trim();
+    if (cleanName.isEmpty) return;
+
+    try {
+      final res = await _repository.createAddon({
+        'name': cleanName,
+        'price': price,
+        'category_id': categoryId,
+        'is_active': true,
+      });
+
+      if (res.success && res.data != null) {
+        allAddons.add(res.data!);
+      } else {
+        allAddons.add(ProductExtraItem(
+          id: 'add_${DateTime.now().millisecondsSinceEpoch}',
+          name: cleanName,
+          price: price,
+          isActive: true,
+          categoryId: categoryId,
+        ));
+      }
+      _showNotification('Success', 'Add-on "$cleanName" created');
+    } catch (e) {
+      _showNotification('Error', 'Failed to create add-on: $e', isError: true);
+    }
+  }
+
+  Future<void> deleteAddonGlobal(String id) async {
+    try {
+      await _repository.deleteAddon(id);
+      allAddons.removeWhere((a) => a.id == id);
+      _showNotification('Deleted', 'Add-on deleted');
+    } catch (e) {
+      _showNotification('Error', 'Failed to delete add-on: $e', isError: true);
     }
   }
 

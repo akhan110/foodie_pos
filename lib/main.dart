@@ -8,6 +8,7 @@ import 'package:foodiepos/app/theme/app_theme.dart';
 import 'package:foodiepos/app/theme/theme_controller.dart';
 import 'package:foodiepos/services/network/network.dart';
 import 'package:foodiepos/services/network/network_config.dart';
+import 'package:foodiepos/services/receipt_settings_service.dart';
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
 
@@ -37,6 +38,7 @@ Future<void> main() async {
   _configureEasyLoading();
 
   Get.put(ThemeController(), permanent: true);
+  Get.put(ReceiptSettingsService(), permanent: true);
   runApp(const BiteFlowApp());
 }
 

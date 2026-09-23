@@ -26,12 +26,32 @@ class ProductExtraItem {
   final String id;
   final String name;
   final double price;
+  final String? categoryId;
+  final bool isActive;
 
   const ProductExtraItem({
     required this.id,
     required this.name,
     required this.price,
+    this.categoryId,
+    this.isActive = true,
   });
+
+  ProductExtraItem copyWith({
+    String? id,
+    String? name,
+    double? price,
+    String? categoryId,
+    bool? isActive,
+  }) {
+    return ProductExtraItem(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      price: price ?? this.price,
+      categoryId: categoryId ?? this.categoryId,
+      isActive: isActive ?? this.isActive,
+    );
+  }
 
   @override
   bool operator ==(Object other) =>

@@ -49,16 +49,19 @@ class _SecondaryAppBarState extends State<SecondaryAppBar> {
     final storage = GetStorage();
 
     // Read real cashier and store info dynamically from session storage
-    final String activeCashierName = widget.cashierName ??
+    final String activeCashierName =
+        widget.cashierName ??
         (storage.read(StorageKeys.cashierName) as String?) ??
-        'Alex Khan';
+        'Akhan';
 
-    final String rawRole = widget.cashierRole ??
+    final String rawRole =
+        widget.cashierRole ??
         (storage.read(StorageKeys.cashierRole) as String?) ??
         'Cashier';
     final String activeCashierRole = rawRole.capitalizeFirst ?? 'Cashier';
 
-    final String activeStoreName = widget.storeName ??
+    final String activeStoreName =
+        widget.storeName ??
         (storage.read(StorageKeys.cashierStore) as String?) ??
         'Store #01';
 
@@ -143,8 +146,8 @@ class _SecondaryAppBarState extends State<SecondaryAppBar> {
             child: CustomTextWidget(
               activeStoreName,
               style: TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w700,
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
                 color: colorScheme.onSurface,
               ),
             ),
@@ -153,10 +156,7 @@ class _SecondaryAppBarState extends State<SecondaryAppBar> {
           const SizedBox(width: 18),
 
           // ---------------- USER ----------------
-          _CashierProfile(
-            name: activeCashierName,
-            role: activeCashierRole,
-          ),
+          _CashierProfile(name: activeCashierName, role: activeCashierRole),
         ],
       ),
     );
@@ -173,14 +173,27 @@ class _SecondaryAppBarState extends State<SecondaryAppBar> {
       if (shift == null) {
         return ElevatedButton.icon(
           onPressed: () => OpenShiftDialog.show(context, shiftController),
-          icon: const Icon(Icons.lock_open_rounded, size: 13, color: Colors.white),
-          label: const Text('Open Shift', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.white)),
+          icon: const Icon(
+            Icons.lock_open_rounded,
+            size: 13,
+            color: Colors.white,
+          ),
+          label: const Text(
+            'Open Shift',
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
+          ),
           style: ElevatedButton.styleFrom(
             backgroundColor: AppColors.primary,
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
             minimumSize: Size.zero,
             tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(14),
+            ),
           ),
         );
       }
@@ -198,14 +211,26 @@ class _SecondaryAppBarState extends State<SecondaryAppBar> {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.point_of_sale_rounded, size: 14, color: Colors.green),
+              const Icon(
+                Icons.point_of_sale_rounded,
+                size: 14,
+                color: Colors.green,
+              ),
               const SizedBox(width: 4),
               Text(
                 'Shift: Rs ${shift.expectedCash.toStringAsFixed(0)}',
-                style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.green),
+                style: const TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.green,
+                ),
               ),
               const SizedBox(width: 4),
-              const Icon(Icons.keyboard_arrow_down, size: 14, color: Colors.green),
+              const Icon(
+                Icons.keyboard_arrow_down,
+                size: 14,
+                color: Colors.green,
+              ),
             ],
           ),
         ),
@@ -270,45 +295,58 @@ class _CashierProfile extends StatelessWidget {
   Widget build(BuildContext context) {
     final ColorScheme colorScheme = Theme.of(context).colorScheme;
 
-    return Row(
-      children: [
-        CircleAvatar(
-          radius: 18,
-          backgroundColor: AppColors.primary,
-          child: CustomTextWidget(
-            initials,
-            style: TextStyle(
-              color: colorScheme.onPrimary,
-              fontSize: 12,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-        ),
-
-        const SizedBox(width: 9),
-
-        Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
+    return InkWell(
+      onTap: () {
+        if (!Get.isRegistered<ShiftController>()) {
+          Get.put(ShiftController());
+        }
+        final shiftController = Get.find<ShiftController>();
+        CloseShiftDialog.show(context, shiftController, logoutOnClose: true);
+      },
+      borderRadius: BorderRadius.circular(12),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+        child: Row(
           children: [
-            CustomTextWidget(
-              name,
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w700,
-                color: colorScheme.onSurface,
+            CircleAvatar(
+              radius: 18,
+              backgroundColor: AppColors.primary,
+              child: CustomTextWidget(
+                initials,
+                style: TextStyle(
+                  color: colorScheme.onPrimary,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                ),
               ),
             ),
-            CustomTextWidget(
-              role,
-              style: TextStyle(
-                fontSize: 10,
-                color: colorScheme.onSurfaceVariant,
-              ),
+
+            const SizedBox(width: 9),
+
+            Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                CustomTextWidget(
+                  name,
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: colorScheme.onSurface,
+                  ),
+                ),
+                CustomTextWidget(
+                  role,
+                  style: TextStyle(
+                    fontSize: 10,
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
             ),
           ],
         ),
-      ],
+      ),
     );
   }
 }

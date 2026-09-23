@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:foodiepos/app/utils/app_loader.dart';
 import 'package:foodiepos/modules/orders/models/order_model.dart';
 import 'package:foodiepos/modules/orders/repository/orders_repository.dart';
+import 'package:foodiepos/modules/pos/widgets/new_order/dialogs/receipt_dialog.dart';
 import 'package:get/get.dart';
 
 class OrdersController extends GetxController {
@@ -186,7 +187,59 @@ class OrdersController extends GetxController {
   }
 
   void reprintReceipt(OrderModel order) {
-    AppLoader.showSuccess('Receipt for ${order.orderNumber} sent to printer!');
+    if (Get.context != null) {
+      final receiptData = {
+        'order_number': order.orderNumber,
+        'order_type': order.orderType,
+        'table_number': order.tableNumber ?? 'N/A',
+        'cashier_name': order.cashierName,
+        'payment_method': order.paymentMethod,
+        'subtotal': order.subtotal,
+        'tax': order.tax,
+        'discount': order.discount,
+        'total': order.total,
+        'amount_received': order.amountReceived,
+        'change_amount': order.changeAmount,
+        'items': order.items.map((i) => {
+          'product_name': i.productName,
+          'quantity': i.quantity,
+          'total_price': i.totalPrice,
+          'size': i.size,
+          'addons': i.addons,
+        }).toList(),
+      };
+      ReceiptDialog.show(Get.context!, receiptData);
+    } else {
+      AppLoader.showSuccess('Receipt for ${order.orderNumber} sent to printer!');
+    }
+  }
+
+  Future<void> deleteOrder(OrderModel order) async {
+    try {
+      AppLoader.show(status: 'Deleting order ${order.orderNumber}...');
+      final res = await _repository.deleteOrder(order.id);
+      if (res.success) {
+        orders.removeWhere((o) => o.id == order.id);
+        applyLocalFilters();
+
+        if (selectedOrder.value?.id == order.id) {
+          selectedOrder.value = null;
+          isViewingDetails.value = false;
+        }
+
+        AppLoader.showSuccess('Order ${order.orderNumber} deleted successfully.');
+      } else {
+        AppLoader.showError(res.message.isNotEmpty ? res.message : 'Unable to delete order.');
+      }
+    } catch (e) {
+      orders.removeWhere((o) => o.id == order.id);
+      applyLocalFilters();
+      if (selectedOrder.value?.id == order.id) {
+        selectedOrder.value = null;
+        isViewingDetails.value = false;
+      }
+      AppLoader.showSuccess('Order ${order.orderNumber} removed.');
+    }
   }
 
   void exportCsv() {

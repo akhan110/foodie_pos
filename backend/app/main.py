@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from .database import Base, engine, init_db_schema
-from .routers import auth, menu, orders, shifts, analytics, deals
+from .routers import auth, menu, orders, shifts, analytics, deals, system
 
 # Automatically create tables and migrate columns if not present
 Base.metadata.create_all(bind=engine)
@@ -33,6 +33,7 @@ app.include_router(orders.router)
 app.include_router(shifts.router)
 app.include_router(analytics.router)
 app.include_router(deals.router)
+app.include_router(system.router)
 
 # Mount static uploads directory for serving product images
 UPLOAD_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "uploads")

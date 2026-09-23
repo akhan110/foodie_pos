@@ -43,6 +43,17 @@ class TokenResponse(BaseModel):
     user: CashierResponse
 
 
+class CategoryCreateRequest(BaseModel):
+    id: Optional[str] = None
+    name: str
+    sort_order: Optional[int] = 0
+
+
+class CategoryUpdateRequest(BaseModel):
+    name: Optional[str] = None
+    sort_order: Optional[int] = None
+
+
 class CategoryResponse(BaseModel):
     id: str
     name: str
@@ -56,6 +67,7 @@ class CategoryResponse(BaseModel):
 
 class ProductResponse(BaseModel):
     id: str
+    sku: Optional[str] = None
     name: str
     category: str
     category_id: str
@@ -64,6 +76,7 @@ class ProductResponse(BaseModel):
     image: str
     is_popular: bool = False
     is_combo: bool = False
+    is_kitchen: bool = True
     is_active: bool = True
 
     @field_validator("price", mode="before")
@@ -79,6 +92,7 @@ class ProductResponse(BaseModel):
 
 class ProductCreateRequest(BaseModel):
     id: Optional[str] = None
+    sku: Optional[str] = None
     name: str
     category_id: str
     price: float
@@ -86,10 +100,12 @@ class ProductCreateRequest(BaseModel):
     image: Optional[str] = "assets/svg/products/burger.svg"
     is_popular: Optional[bool] = False
     is_combo: Optional[bool] = False
+    is_kitchen: Optional[bool] = True
     is_active: Optional[bool] = True
 
 
 class ProductUpdateRequest(BaseModel):
+    sku: Optional[str] = None
     name: Optional[str] = None
     category_id: Optional[str] = None
     price: Optional[float] = None
@@ -97,6 +113,7 @@ class ProductUpdateRequest(BaseModel):
     image: Optional[str] = None
     is_popular: Optional[bool] = None
     is_combo: Optional[bool] = None
+    is_kitchen: Optional[bool] = None
     is_active: Optional[bool] = None
 
 
@@ -236,7 +253,7 @@ class OrderCreateRequest(BaseModel):
     order_type: Optional[str] = "Dine in"
     status: Optional[str] = "Completed"
     table_number: Optional[str] = "Table 1"
-    cashier_name: Optional[str] = "Alex Khan"
+    cashier_name: Optional[str] = "Akhan"
     payment_method: Optional[str] = "Cash"
     subtotal: float
     tax: Optional[float] = 0.0
