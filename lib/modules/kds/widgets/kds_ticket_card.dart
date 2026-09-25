@@ -95,11 +95,12 @@ class KdsTicketCard extends StatelessWidget {
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // Left color-coded accent bar
-                  Container(
-                    width: 6,
-                    color: stageColor,
-                  ),
+                  // Left color-coded accent bar (hidden when RGB border glow is active)
+                  if (!isRgbBorderActive)
+                    Container(
+                      width: 6,
+                      color: stageColor,
+                    ),
 
                   // Main ticket card content
                   Expanded(
@@ -344,7 +345,7 @@ class KdsTicketCard extends StatelessWidget {
                                       )
                                     : const Icon(Icons.play_arrow_rounded, size: 18, color: Colors.white),
                                 label: Text(
-                                  isUpdating ? 'Starting...' : 'Start Cooking',
+                                  isUpdating ? 'Starting...' : 'Start Preparing',
                                   style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: Colors.white),
                                 ),
                                 style: ElevatedButton.styleFrom(
@@ -355,7 +356,10 @@ class KdsTicketCard extends StatelessWidget {
                                 ),
                               );
                             } else if (isPreparing) {
-                              final shouldHighlightReady = isOverdue || isLastOneMinute;
+                              final isTimerEnded = remainingSeconds <= 0;
+                              final btnColor = isTimerEnded ? const Color(0xFF10B981) : (isLastOneMinute ? const Color(0xFFFF5500) : const Color(0xFFF59E0B));
+                              final btnLabel = isTimerEnded ? 'Ready' : (isLastOneMinute ? 'Preparing ($remainingSeconds s)' : 'Preparing');
+                              final btnIcon = isTimerEnded ? Icons.check_circle_rounded : (isLastOneMinute ? Icons.timer_rounded : Icons.soup_kitchen_rounded);
 
                               actionBtn = OutlinedButton.icon(
                                 onPressed: isUpdating ? null : () => controller.markReady(order),
@@ -365,31 +369,29 @@ class KdsTicketCard extends StatelessWidget {
                                         height: 16,
                                         child: CircularProgressIndicator(
                                           strokeWidth: 2,
-                                          color: shouldHighlightReady ? const Color(0xFFEF4444) : stageColor,
+                                          color: btnColor,
                                         ),
                                       )
                                     : Icon(
-                                        Icons.check_circle_outline,
+                                        btnIcon,
                                         size: 16,
-                                        color: shouldHighlightReady ? const Color(0xFFEF4444) : stageColor,
+                                        color: btnColor,
                                       ),
                                 label: Text(
-                                  isUpdating ? 'Updating...' : 'Ready',
+                                  isUpdating ? 'Updating...' : btnLabel,
                                   style: TextStyle(
                                     fontSize: 13,
                                     fontWeight: FontWeight.w900,
-                                    color: shouldHighlightReady ? const Color(0xFFEF4444) : stageColor,
+                                    color: btnColor,
                                   ),
                                 ),
                                 style: OutlinedButton.styleFrom(
-                                  backgroundColor: shouldHighlightReady
-                                      ? (isOverdue
-                                          ? const Color(0xFFEF4444).withValues(alpha: 0.12)
-                                          : const Color(0xFFFF5500).withValues(alpha: 0.12))
-                                      : null,
+                                  backgroundColor: isTimerEnded
+                                      ? const Color(0xFF10B981).withValues(alpha: 0.15)
+                                      : btnColor.withValues(alpha: 0.08),
                                   side: BorderSide(
-                                    color: shouldHighlightReady ? const Color(0xFFEF4444) : stageColor,
-                                    width: shouldHighlightReady ? 2.0 : 1.5,
+                                    color: btnColor,
+                                    width: isTimerEnded ? 2.0 : 1.5,
                                   ),
                                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                                 ),
