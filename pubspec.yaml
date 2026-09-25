@@ -25,6 +25,7 @@ dependencies:
   file_picker: ^8.1.7
   pdf: ^3.11.1
   printing: ^5.13.2
+  audioplayers: ^6.1.0
 
 dev_dependencies:
   flutter_test:
@@ -41,3 +42,4 @@ flutter:
     - assets/svg/biteflow_logo_dark.svg
     - assets/svg/hero_burger.svg
     - assets/svg/products/
+    - assets/sounds/

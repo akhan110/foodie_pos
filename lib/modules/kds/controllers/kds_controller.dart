@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/services.dart';
 import 'package:foodiepos/app/routes/app_routes.dart';
+import 'package:foodiepos/app/services/sound_service.dart';
 import 'package:foodiepos/app/utils/app_loader.dart';
 import 'package:foodiepos/modules/orders/models/order_model.dart';
 import 'package:foodiepos/modules/orders/repository/orders_repository.dart';
@@ -133,7 +134,7 @@ class KdsController extends GetxController {
           });
 
           if (hasNew) {
-            _playChime();
+            _playOrderReceivedSound();
           }
         }
 
@@ -169,15 +170,17 @@ class KdsController extends GetxController {
     return false;
   }
 
-  void _playChime() {
-    try {
-      SystemSound.play(SystemSoundType.alert);
-      HapticFeedback.mediumImpact();
-    } catch (_) {}
+  void _playOrderReceivedSound() {
+    if (!isSoundMuted.value) {
+      SoundService.playOrderReceivedSound();
+    }
   }
 
   void toggleSound() {
     isSoundMuted.toggle();
+    if (!isSoundMuted.value) {
+      _playOrderReceivedSound();
+    }
     AppLoader.showInfo(isSoundMuted.value ? 'KDS Sound Muted' : 'KDS Sound Enabled');
   }
 
@@ -241,17 +244,17 @@ class KdsController extends GetxController {
   // ===========================================================================
 
   Future<void> startCooking(OrderModel order) async {
-    _playChime();
+    HapticFeedback.lightImpact();
     await _updateStatus(order, 'Preparing');
   }
 
   Future<void> markReady(OrderModel order) async {
-    _playChime();
+    HapticFeedback.mediumImpact();
     await _updateStatus(order, 'Ready');
   }
 
   Future<void> markServed(OrderModel order) async {
-    _playChime();
+    HapticFeedback.selectionClick();
     await _updateStatus(order, 'Completed');
   }
 
