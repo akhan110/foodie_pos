@@ -30,6 +30,9 @@ class KdsController extends GetxController {
   // Track in-flight network status transitions to prevent duplicate rapid taps
   final RxSet<String> updatingOrderIds = <String>{}.obs;
 
+  // Track newly arrived order IDs to shake the ticket card for 3 to 4 seconds
+  final RxSet<String> shakingOrderIds = <String>{}.obs;
+
   // Pending status overrides (orderId -> desiredStatus) to shield against heartbeat race conditions
   final Map<String, String> _pendingStatusMap = {};
 
@@ -126,16 +129,25 @@ class KdsController extends GetxController {
         // Sort by created time descending (most urgent / newest first)
         activeList.sort((a, b) => b.createdAt.compareTo(a.createdAt));
 
-        // Check for brand new incoming tickets to play sound chime
-        if (!_isFirstLoad && !isSoundMuted.value) {
-          final hasNew = activeList.any((o) {
+        // Check for brand new incoming tickets to play sound chime and trigger 3-4s card shake
+        if (!_isFirstLoad) {
+          final newOrdersList = activeList.where((o) {
             final s = o.status.toLowerCase().trim();
             final isNew = s == 'new' || s == 'pending';
             return isNew && !_knownOrderIds.contains(o.id);
-          });
+          }).toList();
 
-          if (hasNew) {
-            _playOrderReceivedSound();
+          if (newOrdersList.isNotEmpty) {
+            if (!isSoundMuted.value) {
+              _playOrderReceivedSound();
+            }
+
+            for (final order in newOrdersList) {
+              shakingOrderIds.add(order.id);
+              Timer(const Duration(milliseconds: 3500), () {
+                shakingOrderIds.remove(order.id);
+              });
+            }
           }
         }
 

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:foodiepos/app/theme/app_colors.dart';
 import 'package:foodiepos/app/widgets/custom_text_widget.dart';
 import 'package:foodiepos/modules/kds/controllers/kds_controller.dart';
+import 'package:foodiepos/modules/kds/widgets/kds_shake_wrapper.dart';
 import 'package:foodiepos/modules/orders/models/order_model.dart';
 import 'package:get/get.dart';
 
@@ -40,374 +41,385 @@ class KdsTicketCard extends StatelessWidget {
     final elapsedMinutes = DateTime.now().difference(order.createdAt).inMinutes.clamp(0, 999);
     final timeFormatted = order.formattedTime;
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 14),
-      decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1E222B) : Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: isDark ? const Color(0xFF2C3240) : const Color(0xFFE5E7EB),
-          width: 1,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.04),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(16),
-        child: IntrinsicHeight(
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // Left color-coded accent bar
-              Container(
-                width: 6,
-                color: stageColor,
-              ),
+    return Obx(() {
+      final isShaking = controller.shakingOrderIds.contains(order.id);
 
-              // Main ticket card content
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      // TOP HEADER ROW
-                      Row(
+      return KdsShakeWrapper(
+        isShaking: isShaking,
+        child: Container(
+          margin: const EdgeInsets.only(bottom: 14),
+          decoration: BoxDecoration(
+            color: isDark ? const Color(0xFF1E222B) : Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: isShaking
+                  ? const Color(0xFFEF4444)
+                  : (isDark ? const Color(0xFF2C3240) : const Color(0xFFE5E7EB)),
+              width: isShaking ? 1.5 : 1,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: isShaking
+                    ? const Color(0xFFEF4444).withValues(alpha: 0.3)
+                    : Colors.black.withValues(alpha: isDark ? 0.2 : 0.04),
+                blurRadius: isShaking ? 14 : 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(16),
+            child: IntrinsicHeight(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // Left color-coded accent bar
+                  Container(
+                    width: 6,
+                    color: stageColor,
+                  ),
+
+                  // Main ticket card content
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                      child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
                         children: [
-                          // Order Number & Order Type & Table
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
+                          // TOP HEADER ROW
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              // Order Number & Order Type & Table
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    CustomTextWidget(
-                                      order.orderNumber,
-                                      style: TextStyle(
-                                        fontSize: 18,
-                                        fontWeight: FontWeight.w900,
-                                        color: colors.onSurface,
-                                      ),
+                                    Row(
+                                      children: [
+                                        CustomTextWidget(
+                                          order.orderNumber,
+                                          style: TextStyle(
+                                            fontSize: 18,
+                                            fontWeight: FontWeight.w900,
+                                            color: colors.onSurface,
+                                          ),
+                                        ),
+                                        const SizedBox(width: 8),
+                                        _buildOrderTypeBadge(context, order.orderType),
+                                      ],
                                     ),
-                                    const SizedBox(width: 8),
-                                    _buildOrderTypeBadge(context, order.orderType),
+                                    if (order.tableNumber != null &&
+                                        order.tableNumber!.trim().isNotEmpty &&
+                                        !order.tableNumber!.toLowerCase().contains('counter')) ...[
+                                      const SizedBox(height: 3),
+                                      CustomTextWidget(
+                                        order.tableNumber!,
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w600,
+                                          color: colors.onSurfaceVariant,
+                                        ),
+                                      ),
+                                    ],
                                   ],
                                 ),
-                                if (order.tableNumber != null &&
-                                    order.tableNumber!.trim().isNotEmpty &&
-                                    !order.tableNumber!.toLowerCase().contains('counter')) ...[
-                                  const SizedBox(height: 3),
+                              ),
+
+                              // Elapsed timer & creation time
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.end,
+                                children: [
+                                  Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      CustomTextWidget(
+                                        isReady ? 'Ready' : '$elapsedMinutes min',
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w800,
+                                          color: stageColor,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 4),
+                                      PopupMenuButton<String>(
+                                        icon: Icon(
+                                          Icons.more_vert,
+                                          size: 18,
+                                          color: colors.onSurfaceVariant,
+                                        ),
+                                        padding: EdgeInsets.zero,
+                                        constraints: const BoxConstraints(),
+                                        onSelected: (action) {
+                                          if (controller.updatingOrderIds.contains(order.id)) return;
+                                          if (action == 'new') controller.fetchOrders();
+                                          if (action == 'preparing') controller.startCooking(order);
+                                          if (action == 'ready') controller.markReady(order);
+                                          if (action == 'served') controller.markServed(order);
+                                          if (action == 'remove') controller.promptRemoveOrder(context, order);
+                                        },
+                                        itemBuilder: (context) => [
+                                          if (!isPreparing)
+                                            const PopupMenuItem(
+                                              value: 'preparing',
+                                              child: Text('Move to Preparing'),
+                                            ),
+                                          if (!isReady)
+                                            const PopupMenuItem(
+                                              value: 'ready',
+                                              child: Text('Move to Ready'),
+                                            ),
+                                          const PopupMenuItem(
+                                            value: 'served',
+                                            child: Text('Mark Served'),
+                                          ),
+                                          const PopupMenuDivider(),
+                                          const PopupMenuItem(
+                                            value: 'remove',
+                                            child: Row(
+                                              children: [
+                                                Icon(Icons.delete_outline, color: Colors.red, size: 18),
+                                                SizedBox(width: 8),
+                                                Text(
+                                                  'Remove from KDS',
+                                                  style: TextStyle(
+                                                    color: Colors.red,
+                                                    fontWeight: FontWeight.w600,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
                                   CustomTextWidget(
-                                    order.tableNumber!,
+                                    timeFormatted,
                                     style: TextStyle(
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w600,
-                                      color: colors.onSurfaceVariant,
+                                      fontSize: 11,
+                                      color: colors.onSurfaceVariant.withValues(alpha: 0.8),
                                     ),
                                   ),
                                 ],
-                              ],
-                            ),
+                              ),
+                            ],
                           ),
 
-                          // Elapsed timer & creation time
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.end,
-                            children: [
-                              Row(
-                                mainAxisSize: MainAxisSize.min,
+                          const SizedBox(height: 10),
+                          Divider(height: 1, color: theme.dividerColor.withValues(alpha: 0.5)),
+                          const SizedBox(height: 10),
+
+                          // ITEMS LIST
+                          ...order.items.map((item) {
+                            final sizeText = item.size != 'Regular' ? item.size : null;
+                            final addonsText = (item.addons != null && item.addons!.isNotEmpty) ? item.addons : null;
+                            final detailsList = [
+                              if (sizeText != null && sizeText.isNotEmpty) sizeText,
+                              if (addonsText != null && addonsText.isNotEmpty) addonsText,
+                            ];
+
+                            return Padding(
+                              padding: const EdgeInsets.only(bottom: 6),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  CustomTextWidget(
-                                    isReady ? 'Ready' : '$elapsedMinutes min',
-                                    style: TextStyle(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w800,
-                                      color: stageColor,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 4),
-                                  PopupMenuButton<String>(
-                                    icon: Icon(
-                                      Icons.more_vert,
-                                      size: 18,
-                                      color: colors.onSurfaceVariant,
-                                    ),
-                                    padding: EdgeInsets.zero,
-                                    constraints: const BoxConstraints(),
-                                    onSelected: (action) {
-                                      if (controller.updatingOrderIds.contains(order.id)) return;
-                                      if (action == 'new') controller.fetchOrders();
-                                      if (action == 'preparing') controller.startCooking(order);
-                                      if (action == 'ready') controller.markReady(order);
-                                      if (action == 'served') controller.markServed(order);
-                                      if (action == 'remove') controller.promptRemoveOrder(context, order);
-                                    },
-                                    itemBuilder: (context) => [
-                                      if (!isPreparing)
-                                        const PopupMenuItem(
-                                          value: 'preparing',
-                                          child: Text('Move to Preparing'),
+                                  Row(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      CustomTextWidget(
+                                        '${item.quantity}  ×  ',
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w800,
+                                          color: colors.onSurface,
                                         ),
-                                      if (!isReady)
-                                        const PopupMenuItem(
-                                          value: 'ready',
-                                          child: Text('Move to Ready'),
-                                        ),
-                                      const PopupMenuItem(
-                                        value: 'served',
-                                        child: Text('Mark Served'),
                                       ),
-                                      const PopupMenuDivider(),
-                                      const PopupMenuItem(
-                                        value: 'remove',
-                                        child: Row(
-                                          children: [
-                                             Icon(Icons.delete_outline, color: Colors.red, size: 18),
-                                             SizedBox(width: 8),
-                                             Text(
-                                               'Remove from KDS',
-                                               style: TextStyle(
-                                                 color: Colors.red,
-                                                 fontWeight: FontWeight.w600,
-                                               ),
-                                             ),
-                                          ],
+                                      Expanded(
+                                        child: CustomTextWidget(
+                                          item.productName,
+                                          style: TextStyle(
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.w600,
+                                            color: colors.onSurface,
+                                          ),
                                         ),
                                       ),
                                     ],
                                   ),
+                                  if (detailsList.isNotEmpty)
+                                    Padding(
+                                      padding: const EdgeInsets.only(left: 28, top: 1),
+                                      child: CustomTextWidget(
+                                        detailsList.join(' • '),
+                                        style: const TextStyle(
+                                          fontSize: 11.5,
+                                          fontWeight: FontWeight.w500,
+                                          color: AppColors.primary,
+                                        ),
+                                      ),
+                                    ),
                                 ],
                               ),
-                              CustomTextWidget(
-                                timeFormatted,
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  color: colors.onSurfaceVariant.withValues(alpha: 0.8),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
+                            );
+                          }),
 
-                      const SizedBox(height: 10),
-                      Divider(height: 1, color: theme.dividerColor.withValues(alpha: 0.5)),
-                      const SizedBox(height: 10),
+                          const SizedBox(height: 8),
 
-                      // ITEMS LIST
-                      ...order.items.map((item) {
-                        final sizeText = item.size != 'Regular' ? item.size : null;
-                        final addonsText = (item.addons != null && item.addons!.isNotEmpty) ? item.addons : null;
-                        final detailsList = [
-                          if (sizeText != null && sizeText.isNotEmpty) sizeText,
-                          if (addonsText != null && addonsText.isNotEmpty) addonsText,
-                        ];
-
-                        return Padding(
-                           padding: const EdgeInsets.only(bottom: 6),
-                           child: Column(
-                             crossAxisAlignment: CrossAxisAlignment.start,
-                             children: [
-                               Row(
-                                 crossAxisAlignment: CrossAxisAlignment.start,
-                                 children: [
-                                   CustomTextWidget(
-                                     '${item.quantity}  ×  ',
-                                     style: TextStyle(
-                                       fontSize: 14,
-                                       fontWeight: FontWeight.w800,
-                                       color: colors.onSurface,
-                                     ),
-                                   ),
-                                   Expanded(
-                                     child: CustomTextWidget(
-                                       item.productName,
-                                       style: TextStyle(
-                                         fontSize: 14,
-                                         fontWeight: FontWeight.w600,
-                                         color: colors.onSurface,
-                                       ),
-                                     ),
-                                   ),
-                                 ],
-                               ),
-                               if (detailsList.isNotEmpty)
-                                 Padding(
-                                   padding: const EdgeInsets.only(left: 28, top: 1),
-                                   child: CustomTextWidget(
-                                     detailsList.join(' • '),
-                                     style: const TextStyle(
-                                       fontSize: 11.5,
-                                       fontWeight: FontWeight.w500,
-                                       color: AppColors.primary,
-                                     ),
-                                   ),
-                                 ),
-                             ],
-                           ),
-                         );
-                      }),
-
-                      const SizedBox(height: 8),
-
-                      // PREPARING PROGRESS BAR (Only for Preparing stage)
-                      if (isPreparing) ...[
-                        const SizedBox(height: 4),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: ClipRRect(
-                                borderRadius: BorderRadius.circular(6),
-                                child: LinearProgressIndicator(
-                                  value: (elapsedMinutes / 12.0).clamp(0.1, 1.0),
-                                  backgroundColor: colors.surfaceContainerHighest,
-                                  valueColor: AlwaysStoppedAnimation<Color>(stageColor),
-                                  minHeight: 8,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            CustomTextWidget(
-                              '$elapsedMinutes / 12 min',
-                              style: TextStyle(
-                                fontSize: 11.5,
-                                fontWeight: FontWeight.bold,
-                                color: colors.onSurfaceVariant,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 10),
-                      ],
-
-                      // STAGE ACTION BUTTON + REMOVE BUTTON
-                      Obx(() {
-                        final isUpdating = controller.updatingOrderIds.contains(order.id);
-
-                        Widget actionBtn;
-                        if (isNew) {
-                          actionBtn = ElevatedButton.icon(
-                            onPressed: isUpdating ? null : () => controller.startCooking(order),
-                            icon: isUpdating
-                                ? const SizedBox(
-                                    width: 16,
-                                    height: 16,
-                                    child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                                  )
-                                : const Icon(Icons.play_arrow_rounded, size: 18, color: Colors.white),
-                            label: Text(
-                              isUpdating ? 'Starting...' : 'Start Cooking',
-                              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: Colors.white),
-                            ),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: stageColor,
-                              disabledBackgroundColor: stageColor.withValues(alpha: 0.6),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                              elevation: 0,
-                            ),
-                          );
-                        } else if (isPreparing) {
-                          actionBtn = OutlinedButton.icon(
-                            onPressed: isUpdating ? null : () => controller.markReady(order),
-                            icon: isUpdating
-                                ? SizedBox(
-                                    width: 16,
-                                    height: 16,
-                                    child: CircularProgressIndicator(strokeWidth: 2, color: stageColor),
-                                  )
-                                : Icon(Icons.check_circle_outline, size: 16, color: stageColor),
-                            label: Text(
-                              isUpdating ? 'Updating...' : 'Ready',
-                              style: TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w800,
-                                color: isUpdating ? stageColor.withValues(alpha: 0.6) : stageColor,
-                              ),
-                            ),
-                            style: OutlinedButton.styleFrom(
-                              side: BorderSide(
-                                color: isUpdating ? stageColor.withValues(alpha: 0.4) : stageColor,
-                                width: 1.5,
-                              ),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                            ),
-                          );
-                        } else if (isReady) {
-                          actionBtn = ElevatedButton.icon(
-                            onPressed: isUpdating ? null : () => controller.markServed(order),
-                            icon: isUpdating
-                                ? const SizedBox(
-                                    width: 16,
-                                    height: 16,
-                                    child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                                  )
-                                : const Icon(Icons.check_rounded, size: 18, color: Colors.white),
-                            label: Text(
-                              isUpdating ? 'Serving...' : 'Mark Served',
-                              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: Colors.white),
-                            ),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: stageColor,
-                              disabledBackgroundColor: stageColor.withValues(alpha: 0.6),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                              elevation: 0,
-                            ),
-                          );
-                        } else {
-                          return const SizedBox.shrink();
-                        }
-
-                        return Row(
-                          children: [
-                            Expanded(
-                              child: SizedBox(
-                                height: 38,
-                                child: actionBtn,
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Tooltip(
-                              message: 'Remove from KDS',
-                              child: InkWell(
-                                onTap: isUpdating ? null : () => controller.promptRemoveOrder(context, order),
-                                borderRadius: BorderRadius.circular(10),
-                                child: Container(
-                                  width: 38,
-                                  height: 38,
-                                  decoration: BoxDecoration(
-                                    color: colors.surfaceContainerHighest,
-                                    borderRadius: BorderRadius.circular(10),
-                                    border: Border.all(
-                                      color: theme.dividerColor.withValues(alpha: 0.6),
+                          // PREPARING PROGRESS BAR (Only for Preparing stage)
+                          if (isPreparing) ...[
+                            const SizedBox(height: 4),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: ClipRRect(
+                                    borderRadius: BorderRadius.circular(6),
+                                    child: LinearProgressIndicator(
+                                      value: (elapsedMinutes / 12.0).clamp(0.1, 1.0),
+                                      backgroundColor: colors.surfaceContainerHighest,
+                                      valueColor: AlwaysStoppedAnimation<Color>(stageColor),
+                                      minHeight: 8,
                                     ),
                                   ),
-                                  child: const Icon(
-                                    Icons.delete_outline_rounded,
-                                    size: 19,
-                                    color: Colors.redAccent,
+                                ),
+                                const SizedBox(width: 8),
+                                CustomTextWidget(
+                                  '$elapsedMinutes / 12 min',
+                                  style: TextStyle(
+                                    fontSize: 11.5,
+                                    fontWeight: FontWeight.bold,
+                                    color: colors.onSurfaceVariant,
                                   ),
                                 ),
-                              ),
+                              ],
                             ),
+                            const SizedBox(height: 10),
                           ],
-                        );
-                      }),
-                    ],
+
+                          // STAGE ACTION BUTTON + REMOVE BUTTON
+                          Obx(() {
+                            final isUpdating = controller.updatingOrderIds.contains(order.id);
+
+                            Widget actionBtn;
+                            if (isNew) {
+                              actionBtn = ElevatedButton.icon(
+                                onPressed: isUpdating ? null : () => controller.startCooking(order),
+                                icon: isUpdating
+                                    ? const SizedBox(
+                                        width: 16,
+                                        height: 16,
+                                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                                      )
+                                    : const Icon(Icons.play_arrow_rounded, size: 18, color: Colors.white),
+                                label: Text(
+                                  isUpdating ? 'Starting...' : 'Start Cooking',
+                                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: Colors.white),
+                                ),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: stageColor,
+                                  disabledBackgroundColor: stageColor.withValues(alpha: 0.6),
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                  elevation: 0,
+                                ),
+                              );
+                            } else if (isPreparing) {
+                              actionBtn = OutlinedButton.icon(
+                                onPressed: isUpdating ? null : () => controller.markReady(order),
+                                icon: isUpdating
+                                    ? SizedBox(
+                                        width: 16,
+                                        height: 16,
+                                        child: CircularProgressIndicator(strokeWidth: 2, color: stageColor),
+                                      )
+                                    : Icon(Icons.check_circle_outline, size: 16, color: stageColor),
+                                label: Text(
+                                  isUpdating ? 'Updating...' : 'Ready',
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w800,
+                                    color: isUpdating ? stageColor.withValues(alpha: 0.6) : stageColor,
+                                  ),
+                                ),
+                                style: OutlinedButton.styleFrom(
+                                  side: BorderSide(
+                                    color: isUpdating ? stageColor.withValues(alpha: 0.4) : stageColor,
+                                    width: 1.5,
+                                  ),
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                ),
+                              );
+                            } else if (isReady) {
+                              actionBtn = ElevatedButton.icon(
+                                onPressed: isUpdating ? null : () => controller.markServed(order),
+                                icon: isUpdating
+                                    ? const SizedBox(
+                                        width: 16,
+                                        height: 16,
+                                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                                      )
+                                    : const Icon(Icons.check_rounded, size: 18, color: Colors.white),
+                                label: Text(
+                                  isUpdating ? 'Serving...' : 'Mark Served',
+                                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: Colors.white),
+                                ),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: stageColor,
+                                  disabledBackgroundColor: stageColor.withValues(alpha: 0.6),
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                  elevation: 0,
+                                ),
+                              );
+                            } else {
+                              return const SizedBox.shrink();
+                            }
+
+                            return Row(
+                              children: [
+                                Expanded(
+                                  child: SizedBox(
+                                    height: 38,
+                                    child: actionBtn,
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Tooltip(
+                                  message: 'Remove from KDS',
+                                  child: InkWell(
+                                    onTap: isUpdating ? null : () => controller.promptRemoveOrder(context, order),
+                                    borderRadius: BorderRadius.circular(10),
+                                    child: Container(
+                                      width: 38,
+                                      height: 38,
+                                      decoration: BoxDecoration(
+                                        color: colors.surfaceContainerHighest,
+                                        borderRadius: BorderRadius.circular(10),
+                                        border: Border.all(
+                                          color: theme.dividerColor.withValues(alpha: 0.6),
+                                        ),
+                                      ),
+                                      child: const Icon(
+                                        Icons.delete_outline_rounded,
+                                        size: 19,
+                                        color: Colors.redAccent,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            );
+                          }),
+                        ],
+                      ),
+                    ),
                   ),
-                ),
+                ],
               ),
-            ],
+            ),
           ),
         ),
-      ),
-    );
+      );
+    });
   }
 
   Widget _buildOrderTypeBadge(BuildContext context, String type) {
