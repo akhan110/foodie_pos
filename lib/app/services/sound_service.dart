@@ -29,6 +29,25 @@ class SoundService {
     }
   }
 
+  /// Play order prepared / ready chime sound
+  static Future<void> playPreparedSound() async {
+    try {
+      final p = player;
+      await p.stop();
+      await p.play(
+        AssetSource('sounds/prepared.wav'),
+        mode: PlayerMode.lowLatency,
+      );
+      HapticFeedback.heavyImpact();
+    } catch (e) {
+      debugPrint('Error playing prepared sound: $e');
+      try {
+        SystemSound.play(SystemSoundType.alert);
+        HapticFeedback.heavyImpact();
+      } catch (_) {}
+    }
+  }
+
   /// Dispose audio player when app closes
   static void dispose() {
     _player?.dispose();

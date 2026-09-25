@@ -176,6 +176,12 @@ class KdsController extends GetxController {
     }
   }
 
+  void _playPreparedSound() {
+    if (!isSoundMuted.value) {
+      SoundService.playPreparedSound();
+    }
+  }
+
   void toggleSound() {
     isSoundMuted.toggle();
     if (!isSoundMuted.value) {
@@ -249,7 +255,7 @@ class KdsController extends GetxController {
   }
 
   Future<void> markReady(OrderModel order) async {
-    HapticFeedback.mediumImpact();
+    _playPreparedSound();
     await _updateStatus(order, 'Ready');
   }
 
