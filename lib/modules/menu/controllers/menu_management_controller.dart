@@ -35,6 +35,7 @@ class MenuManagementController extends GetxController {
   final TextEditingController nameController = TextEditingController();
   final TextEditingController skuController = TextEditingController();
   final TextEditingController priceController = TextEditingController();
+  final TextEditingController prepTimeController = TextEditingController(text: '3');
   final TextEditingController descriptionController = TextEditingController();
   final RxString formCategory = 'burgers'.obs;
   final RxBool formIsAvailable = true.obs;
@@ -64,6 +65,7 @@ class MenuManagementController extends GetxController {
     nameController.dispose();
     skuController.dispose();
     priceController.dispose();
+    prepTimeController.dispose();
     descriptionController.dispose();
     super.onClose();
   }
@@ -178,6 +180,7 @@ class MenuManagementController extends GetxController {
     nameController.text = product.name;
     skuController.text = product.sku ?? product.effectiveSku;
     priceController.text = product.price.toStringAsFixed(0);
+    prepTimeController.text = product.prepTimeMinutes.toString();
     descriptionController.text = product.description ?? _getDefaultDescription(product.category.name);
 
     // Match category ID against available categories
@@ -208,6 +211,7 @@ class MenuManagementController extends GetxController {
     nameController.clear();
     skuController.text = '${defaultCat.substring(0, defaultCat.length >= 3 ? 3 : defaultCat.length).toUpperCase()}-001';
     priceController.clear();
+    prepTimeController.text = '3';
     descriptionController.clear();
     formCategory.value = defaultCat;
     formIsAvailable.value = true;
@@ -272,6 +276,7 @@ class MenuManagementController extends GetxController {
     final name = nameController.text.trim();
     final sku = skuController.text.trim();
     final price = double.tryParse(priceController.text.trim()) ?? 0.0;
+    final prepTime = int.tryParse(prepTimeController.text.trim()) ?? 3;
     final description = descriptionController.text.trim();
 
     if (name.isEmpty) {
@@ -292,6 +297,7 @@ class MenuManagementController extends GetxController {
         'sku': sku.isNotEmpty ? sku : null,
         'category_id': formCategory.value,
         'price': price,
+        'prep_time_minutes': prepTime,
         'description': description,
         'image': formImage.value,
         'is_active': formIsAvailable.value,
@@ -333,6 +339,7 @@ class MenuManagementController extends GetxController {
             categoryId: formCategory.value,
             categoryName: matchedName,
             price: price,
+            prepTimeMinutes: prepTime,
             description: description,
             image: formImage.value,
             isActive: formIsAvailable.value,

@@ -426,6 +426,17 @@ class ProductEditorDialog extends StatelessWidget {
                                   keyboardType: TextInputType.number,
                                 ),
                               ),
+                              const SizedBox(width: 14),
+                              Expanded(
+                                flex: 2,
+                                child: _buildLabeledInput(
+                                  context: context,
+                                  label: 'COOK TIME (MINS)',
+                                  controller: controller.prepTimeController,
+                                  hint: '3',
+                                  keyboardType: TextInputType.number,
+                                ),
+                              ),
                             ],
                           ),
 

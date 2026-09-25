@@ -78,6 +78,7 @@ class ProductResponse(BaseModel):
     is_combo: bool = False
     is_kitchen: bool = True
     is_active: bool = True
+    prep_time_minutes: int = 3
 
     @field_validator("price", mode="before")
     @classmethod
@@ -102,6 +103,7 @@ class ProductCreateRequest(BaseModel):
     is_combo: Optional[bool] = False
     is_kitchen: Optional[bool] = True
     is_active: Optional[bool] = True
+    prep_time_minutes: Optional[int] = 3
 
 
 class ProductUpdateRequest(BaseModel):
@@ -115,6 +117,7 @@ class ProductUpdateRequest(BaseModel):
     is_combo: Optional[bool] = None
     is_kitchen: Optional[bool] = None
     is_active: Optional[bool] = None
+    prep_time_minutes: Optional[int] = None
 
 
 class AddonResponse(BaseModel):
@@ -194,6 +197,7 @@ class OrderItemResponse(BaseModel):
     quantity: int = 1
     unit_price: float
     total_price: float
+    prep_time_minutes: int = 3
 
     @field_validator("unit_price", "total_price", mode="before")
     @classmethod
@@ -245,6 +249,7 @@ class OrderItemCreateRequest(BaseModel):
     quantity: int = 1
     unit_price: float
     total_price: float
+    prep_time_minutes: Optional[int] = 3
 
 
 class OrderCreateRequest(BaseModel):

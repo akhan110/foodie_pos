@@ -42,6 +42,7 @@ class OrderItemModel {
   final int quantity;
   final double unitPrice;
   final double totalPrice;
+  final int prepTimeMinutes;
 
   const OrderItemModel({
     required this.id,
@@ -54,6 +55,7 @@ class OrderItemModel {
     this.quantity = 1,
     required this.unitPrice,
     required this.totalPrice,
+    this.prepTimeMinutes = 3,
   });
 
   factory OrderItemModel.fromJson(Map<String, dynamic> json) {
@@ -68,6 +70,7 @@ class OrderItemModel {
       quantity: (json['quantity'] as num?)?.toInt() ?? 1,
       unitPrice: (json['unit_price'] as num?)?.toDouble() ?? 0.0,
       totalPrice: (json['total_price'] as num?)?.toDouble() ?? 0.0,
+      prepTimeMinutes: (json['prep_time_minutes'] as num?)?.toInt() ?? (json['prepTimeMinutes'] as num?)?.toInt() ?? 3,
     );
   }
 
@@ -83,6 +86,7 @@ class OrderItemModel {
       'quantity': quantity,
       'unit_price': unitPrice,
       'total_price': totalPrice,
+      'prep_time_minutes': prepTimeMinutes,
     };
   }
 
@@ -225,6 +229,19 @@ class OrderModel {
 
   String get formattedTime => _formatTime(createdAt.toLocal());
   String get formattedDate => _formatDate(createdAt.toLocal());
+
+  int get targetPrepMinutes {
+    if (items.isEmpty) return 3;
+    int maxMins = 3;
+    for (final it in items) {
+      if (it.prepTimeMinutes > maxMins) {
+        maxMins = it.prepTimeMinutes;
+      }
+    }
+    return maxMins;
+  }
+
+  int get targetPrepSeconds => targetPrepMinutes * 60;
 
   String get formattedCompletedSubtitle {
     final now = DateTime.now();

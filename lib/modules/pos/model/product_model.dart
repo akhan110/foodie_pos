@@ -15,6 +15,7 @@ class ProductModel {
     this.isCombo = false,
     this.isKitchen = true,
     this.isActive = true,
+    this.prepTimeMinutes = 3,
   });
 
   final String id;
@@ -30,6 +31,7 @@ class ProductModel {
   final bool isCombo;
   final bool isKitchen;
   final bool isActive;
+  final int prepTimeMinutes;
 
   String get effectiveSku => sku ?? '${category.name.substring(0, category.name.length >= 3 ? 3 : category.name.length).toUpperCase()}-${id.length >= 3 ? id.substring(id.length - 3).toUpperCase() : "001"}';
 
@@ -61,6 +63,7 @@ class ProductModel {
       isCombo: json['is_combo'] as bool? ?? json['isCombo'] as bool? ?? false,
       isKitchen: json['is_kitchen'] as bool? ?? json['isKitchen'] as bool? ?? true,
       isActive: json['is_active'] as bool? ?? json['isActive'] as bool? ?? true,
+      prepTimeMinutes: (json['prep_time_minutes'] as num?)?.toInt() ?? (json['prepTimeMinutes'] as num?)?.toInt() ?? 3,
     );
   }
 
@@ -78,6 +81,7 @@ class ProductModel {
       'is_combo': isCombo,
       'is_kitchen': isKitchen,
       'is_active': isActive,
+      'prep_time_minutes': prepTimeMinutes,
     };
   }
 
@@ -95,6 +99,7 @@ class ProductModel {
     bool? isCombo,
     bool? isKitchen,
     bool? isActive,
+    int? prepTimeMinutes,
   }) {
     return ProductModel(
       id: id ?? this.id,
@@ -110,6 +115,7 @@ class ProductModel {
       isCombo: isCombo ?? this.isCombo,
       isKitchen: isKitchen ?? this.isKitchen,
       isActive: isActive ?? this.isActive,
+      prepTimeMinutes: prepTimeMinutes ?? this.prepTimeMinutes,
     );
   }
 }

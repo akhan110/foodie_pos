@@ -60,6 +60,7 @@ class Product(Base):
     is_combo = Column(Boolean, default=False)
     is_kitchen = Column(Boolean, default=True)
     is_active = Column(Boolean, default=True)
+    prep_time_minutes = Column(Integer, default=3, nullable=True)
     created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
     category_rel = relationship("Category", back_populates="products")
 
@@ -123,6 +124,7 @@ class OrderItem(Base):
     quantity = Column(Integer, nullable=False, default=1)
     unit_price = Column(Numeric(10, 2), nullable=False, default=0.0)
     total_price = Column(Numeric(10, 2), nullable=False, default=0.0)
+    prep_time_minutes = Column(Integer, default=3, nullable=True)
     price = Column(Numeric(10, 2), nullable=True)
     item_total = Column(Numeric(10, 2), nullable=True)
     order_rel = relationship("Order", back_populates="items")

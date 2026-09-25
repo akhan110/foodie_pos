@@ -592,6 +592,7 @@ class PosController extends GetxController {
           'product_id': it.product.id,
           'product_name': it.product.name,
           'product_image': it.product.image,
+          'prep_time_minutes': it.product.prepTimeMinutes,
           'size': it.size.name,
           'addons': it.extras.isNotEmpty
               ? it.extras.map((e) => e.name).join(', ')

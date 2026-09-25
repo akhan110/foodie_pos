@@ -238,6 +238,7 @@ def get_products(
             "is_combo": p.is_combo,
             "is_kitchen": p.is_kitchen if p.is_kitchen is not None else True,
             "is_active": p.is_active,
+            "prep_time_minutes": getattr(p, "prep_time_minutes", 3) or 3,
         })
 
     return {
@@ -275,6 +276,7 @@ def create_product(req: ProductCreateRequest, db: Session = Depends(get_db)):
         is_combo=req.is_combo or False,
         is_kitchen=req.is_kitchen if req.is_kitchen is not None else True,
         is_active=req.is_active if req.is_active is not None else True,
+        prep_time_minutes=req.prep_time_minutes or 3,
     )
     db.add(new_product)
     db.commit()
@@ -296,6 +298,7 @@ def create_product(req: ProductCreateRequest, db: Session = Depends(get_db)):
             "is_combo": new_product.is_combo,
             "is_kitchen": new_product.is_kitchen,
             "is_active": new_product.is_active,
+            "prep_time_minutes": new_product.prep_time_minutes or 3,
         },
         "statusCode": 201,
     }
@@ -331,6 +334,8 @@ def update_product(product_id: str, req: ProductUpdateRequest, db: Session = Dep
         product.is_kitchen = req.is_kitchen
     if req.is_active is not None:
         product.is_active = req.is_active
+    if req.prep_time_minutes is not None:
+        product.prep_time_minutes = req.prep_time_minutes
 
     db.commit()
     db.refresh(product)
@@ -351,6 +356,7 @@ def update_product(product_id: str, req: ProductUpdateRequest, db: Session = Dep
             "is_combo": product.is_combo,
             "is_kitchen": product.is_kitchen if product.is_kitchen is not None else True,
             "is_active": product.is_active,
+            "prep_time_minutes": getattr(product, "prep_time_minutes", 3) or 3,
         },
         "statusCode": 200,
     }
