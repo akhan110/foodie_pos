@@ -4,11 +4,13 @@ import 'package:flutter/material.dart';
 class KdsShakeWrapper extends StatefulWidget {
   final Widget child;
   final bool isShaking;
+  final Color? pulseGlowColor; // Ambient glow for 2-min warning & overdue
 
   const KdsShakeWrapper({
     super.key,
     required this.child,
     required this.isShaking,
+    this.pulseGlowColor,
   });
 
   @override
@@ -16,80 +18,123 @@ class KdsShakeWrapper extends StatefulWidget {
 }
 
 class _KdsShakeWrapperState extends State<KdsShakeWrapper>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  late Animation<double> _animation;
+    with TickerProviderStateMixin {
+  late AnimationController _shakeController;
+  late Animation<double> _shakeAnimation;
+
+  late AnimationController _pulseController;
+  late Animation<double> _pulseAnimation;
 
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(
+
+    // 1. Gentle arrival nudge (1.8s, calm and refined - no violent dancing)
+    _shakeController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 3500),
+      duration: const Duration(milliseconds: 1800),
     );
 
-    _animation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
+    _shakeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _shakeController, curve: Curves.easeOutCubic),
+    );
+
+    // 2. Ambient breathing pulse for 2-min remaining and overdue ending timer
+    _pulseController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1500),
+    );
+
+    _pulseAnimation = Tween<double>(begin: 0.2, end: 0.75).animate(
+      CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
     );
 
     if (widget.isShaking) {
-      _controller.forward(from: 0.0);
+      _shakeController.forward(from: 0.0);
+    }
+
+    if (widget.pulseGlowColor != null) {
+      _pulseController.repeat(reverse: true);
     }
   }
 
   @override
   void didUpdateWidget(covariant KdsShakeWrapper oldWidget) {
     super.didUpdateWidget(oldWidget);
+
     if (widget.isShaking && !oldWidget.isShaking) {
-      _controller.forward(from: 0.0);
+      _shakeController.forward(from: 0.0);
     } else if (!widget.isShaking && oldWidget.isShaking) {
-      _controller.reset();
+      _shakeController.reset();
+    }
+
+    if (widget.pulseGlowColor != null && oldWidget.pulseGlowColor == null) {
+      _pulseController.repeat(reverse: true);
+    } else if (widget.pulseGlowColor == null && oldWidget.pulseGlowColor != null) {
+      _pulseController.stop();
+      _pulseController.reset();
     }
   }
 
   @override
   void dispose() {
-    _controller.dispose();
+    _shakeController.dispose();
+    _pulseController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return AnimatedBuilder(
-      animation: _animation,
+      animation: Listenable.merge([_shakeAnimation, _pulseAnimation]),
       builder: (context, child) {
-        if (!_controller.isAnimating && !widget.isShaking) {
-          return child!;
+        // --- 1. Arrival Nudge Calculation ---
+        double offsetX = 0.0;
+        double angle = 0.0;
+
+        if (_shakeController.isAnimating) {
+          final progress = _shakeAnimation.value;
+          final decay = math.pow(1.0 - progress, 2).toDouble(); // fast smooth decay
+
+          // Subtle 2-cycle gentle nudge (max ±1.2 degrees)
+          angle = math.sin(progress * math.pi * 5) * 0.022 * decay;
+          offsetX = math.sin(progress * math.pi * 5) * 2.5 * decay;
         }
 
-        final progress = _animation.value;
-        final decay = 1.0 - (progress * 0.45); // smooth decay towards end
+        // --- 2. Ambient Glowing Border for Warning & Overdue ---
+        final glowColor = widget.pulseGlowColor;
+        final glowAlpha = glowColor != null ? _pulseAnimation.value : 0.0;
 
-        // Steering wheel rotation angle: tilts back and forth left & right (±3.5 degrees)
-        final angle = math.sin(progress * math.pi * 18) * 0.058 * decay;
-        final offsetX = math.sin(progress * math.pi * 18) * 3.5 * decay;
-        final glowAlpha = (math.sin(progress * math.pi * 9).abs() * 0.45 * decay).clamp(0.0, 1.0);
+        Widget content = child!;
 
-        return Transform.translate(
-          offset: Offset(offsetX, 0.0),
-          child: Transform.rotate(
-            angle: angle,
-            alignment: Alignment.center,
-            child: Container(
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: [
-                  BoxShadow(
-                    color: const Color(0xFFEF4444).withValues(alpha: glowAlpha),
-                    blurRadius: 18,
-                    spreadRadius: 2,
-                  ),
-                ],
-              ),
-              child: child,
+        if (glowColor != null) {
+          content = Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: glowColor.withValues(alpha: glowAlpha * 0.55),
+                  blurRadius: 16,
+                  spreadRadius: 2,
+                ),
+              ],
             ),
-          ),
-        );
+            child: content,
+          );
+        }
+
+        if (offsetX != 0.0 || angle != 0.0) {
+          content = Transform.translate(
+            offset: Offset(offsetX, 0.0),
+            child: Transform.rotate(
+              angle: angle,
+              alignment: Alignment.center,
+              child: content,
+            ),
+          );
+        }
+
+        return content;
       },
       child: widget.child,
     );
