@@ -565,6 +565,7 @@ class PosController extends GetxController {
       (cashReceived.value - total) > 0 ? (cashReceived.value - total) : 0.0;
 
   Future<void> completeOrder() async {
+    if (isPlacingOrder.value) return;
     if (cartItems.isEmpty) {
       AppLoader.showInfo('Cart is empty.');
       return;
@@ -572,7 +573,6 @@ class PosController extends GetxController {
 
     try {
       isPlacingOrder.value = true;
-      AppLoader.show(status: 'Completing order...');
 
       final storage = GetStorage();
       final cashierName = storage.read(StorageKeys.cashierName) ?? 'Akhan';
@@ -650,7 +650,7 @@ class PosController extends GetxController {
         'items': payloadItems,
       };
 
-      AppLoader.showSuccess('Order $orderNumber placed successfully!');
+      AppLoader.dismiss();
 
       // Clear cart & close payment view
       clearCart();
@@ -661,7 +661,7 @@ class PosController extends GetxController {
         Get.find<OrdersController>().loadOrders(showLoading: false);
       }
 
-      // Show Thermal Receipt Popup
+      // Show Thermal Receipt Popup cleanly (only one dialog)
       if (Get.context != null) {
         ReceiptDialog.show(Get.context!, receiptData, onPrintComplete: () {
           if (Get.isRegistered<MainShellController>()) {
@@ -673,6 +673,7 @@ class PosController extends GetxController {
       }
     } catch (e) {
       final fallbackNum = '#${DateTime.now().millisecondsSinceEpoch.toString().substring(8)}';
+      AppLoader.dismiss();
       AppLoader.showSuccess('Order $fallbackNum placed successfully (Offline)!');
 
       clearCart();

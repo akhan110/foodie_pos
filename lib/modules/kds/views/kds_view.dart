@@ -419,6 +419,7 @@ class KdsView extends GetView<KdsController> {
                     itemCount: orders.length,
                     itemBuilder: (context, index) {
                       return KdsTicketCard(
+                        key: ValueKey(orders[index].id),
                         order: orders[index],
                         controller: controller,
                       );

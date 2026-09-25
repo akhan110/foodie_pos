@@ -3,6 +3,7 @@ import 'package:foodiepos/app/theme/app_colors.dart';
 import 'package:foodiepos/app/widgets/custom_text_widget.dart';
 import 'package:foodiepos/modules/kds/controllers/kds_controller.dart';
 import 'package:foodiepos/modules/orders/models/order_model.dart';
+import 'package:get/get.dart';
 
 class KdsTicketCard extends StatelessWidget {
   final OrderModel order;
@@ -141,7 +142,9 @@ class KdsTicketCard extends StatelessWidget {
                                     padding: EdgeInsets.zero,
                                     constraints: const BoxConstraints(),
                                     onSelected: (action) {
+                                      if (controller.updatingOrderIds.contains(order.id)) return;
                                       if (action == 'new') controller.fetchOrders();
+                                      if (action == 'preparing') controller.startCooking(order);
                                       if (action == 'ready') controller.markReady(order);
                                       if (action == 'served') controller.markServed(order);
                                     },
@@ -267,68 +270,97 @@ class KdsTicketCard extends StatelessWidget {
                       ],
 
                       // STAGE ACTION BUTTON
-                      if (isNew)
-                        SizedBox(
-                          width: double.infinity,
-                          height: 38,
-                          child: ElevatedButton.icon(
-                            onPressed: () => controller.startCooking(order),
-                            icon: const Icon(Icons.play_arrow_rounded, size: 18, color: Colors.white),
-                            label: const Text(
-                              'Start Cooking',
-                              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: Colors.white),
+                      Obx(() {
+                        final isUpdating = controller.updatingOrderIds.contains(order.id);
+
+                        if (isNew) {
+                          return SizedBox(
+                            width: double.infinity,
+                            height: 38,
+                            child: ElevatedButton.icon(
+                              onPressed: isUpdating ? null : () => controller.startCooking(order),
+                              icon: isUpdating
+                                  ? const SizedBox(
+                                      width: 16,
+                                      height: 16,
+                                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                                    )
+                                  : const Icon(Icons.play_arrow_rounded, size: 18, color: Colors.white),
+                              label: Text(
+                                isUpdating ? 'Starting...' : 'Start Cooking',
+                                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: Colors.white),
+                              ),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: stageColor,
+                                disabledBackgroundColor: stageColor.withValues(alpha: 0.6),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                elevation: 0,
+                              ),
                             ),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: stageColor,
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                              elevation: 0,
-                            ),
-                          ),
-                        )
-                      else if (isPreparing)
-                        Row(
-                          children: [
-                            Expanded(
-                              child: SizedBox(
-                                height: 38,
-                                child: OutlinedButton.icon(
-                                  onPressed: () => controller.markReady(order),
-                                  icon: Icon(Icons.check_circle_outline, size: 16, color: stageColor),
-                                  label: Text(
-                                    'Ready',
-                                    style: TextStyle(
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w800,
-                                      color: stageColor,
+                          );
+                        } else if (isPreparing) {
+                          return Row(
+                            children: [
+                              Expanded(
+                                child: SizedBox(
+                                  height: 38,
+                                  child: OutlinedButton.icon(
+                                    onPressed: isUpdating ? null : () => controller.markReady(order),
+                                    icon: isUpdating
+                                        ? SizedBox(
+                                            width: 16,
+                                            height: 16,
+                                            child: CircularProgressIndicator(strokeWidth: 2, color: stageColor),
+                                          )
+                                        : Icon(Icons.check_circle_outline, size: 16, color: stageColor),
+                                    label: Text(
+                                      isUpdating ? 'Updating...' : 'Ready',
+                                      style: TextStyle(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w800,
+                                        color: isUpdating ? stageColor.withValues(alpha: 0.6) : stageColor,
+                                      ),
                                     ),
-                                  ),
-                                  style: OutlinedButton.styleFrom(
-                                    side: BorderSide(color: stageColor, width: 1.5),
-                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                    style: OutlinedButton.styleFrom(
+                                      side: BorderSide(
+                                        color: isUpdating ? stageColor.withValues(alpha: 0.4) : stageColor,
+                                        width: 1.5,
+                                      ),
+                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                    ),
                                   ),
                                 ),
                               ),
+                            ],
+                          );
+                        } else if (isReady) {
+                          return SizedBox(
+                            width: double.infinity,
+                            height: 38,
+                            child: ElevatedButton.icon(
+                              onPressed: isUpdating ? null : () => controller.markServed(order),
+                              icon: isUpdating
+                                  ? const SizedBox(
+                                      width: 16,
+                                      height: 16,
+                                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                                    )
+                                  : const Icon(Icons.check_rounded, size: 18, color: Colors.white),
+                              label: Text(
+                                isUpdating ? 'Serving...' : 'Mark Served',
+                                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: Colors.white),
+                              ),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: stageColor,
+                                disabledBackgroundColor: stageColor.withValues(alpha: 0.6),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                elevation: 0,
+                              ),
                             ),
-                          ],
-                        )
-                      else if (isReady)
-                        SizedBox(
-                          width: double.infinity,
-                          height: 38,
-                          child: ElevatedButton.icon(
-                            onPressed: () => controller.markServed(order),
-                            icon: const Icon(Icons.check_rounded, size: 18, color: Colors.white),
-                            label: const Text(
-                              'Mark Served',
-                              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: Colors.white),
-                            ),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: stageColor,
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                              elevation: 0,
-                            ),
-                          ),
-                        ),
+                          );
+                        }
+                        return const SizedBox.shrink();
+                      }),
                     ],
                   ),
                 ),

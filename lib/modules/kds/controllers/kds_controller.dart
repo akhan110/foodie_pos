@@ -25,6 +25,12 @@ class KdsController extends GetxController {
   // Real-time clock string
   final RxString currentTime = ''.obs;
 
+  // Track in-flight network status transitions to prevent duplicate rapid taps
+  final RxSet<String> updatingOrderIds = <String>{}.obs;
+
+  // Pending status overrides (orderId -> desiredStatus) to shield against heartbeat race conditions
+  final Map<String, String> _pendingStatusMap = {};
+
   // Track known order IDs to detect new incoming tickets for audio chime
   final Set<String> _knownOrderIds = {};
   bool _isFirstLoad = true;
@@ -89,13 +95,31 @@ class KdsController extends GetxController {
 
       final response = await _ordersRepository.getOrders();
       if (response.success && response.data != null) {
-        final allFetched = response.data!;
+        final rawFetched = response.data!;
 
-        // Filter only active kitchen orders (exclude Completed or Voided)
-        final activeList = allFetched.where((o) {
-          final s = o.status.toLowerCase().trim();
-          return s == 'new' || s == 'pending' || s == 'preparing' || s == 'ready';
-        }).toList();
+        // Build active kitchen orders list while applying pending optimistic shields
+        final activeList = <OrderModel>[];
+
+        for (final rawOrder in rawFetched) {
+          final id = rawOrder.id;
+
+          // If this order has a pending local transition, adhere to the client's desired state
+          if (_pendingStatusMap.containsKey(id)) {
+            final pending = _pendingStatusMap[id]!;
+            if (pending == 'Completed' || pending == 'Voided') {
+              // Order was marked completed/served; do not bring it back!
+              continue;
+            }
+            // Retain user's target status (e.g. 'Preparing' or 'Ready')
+            activeList.add(rawOrder.copyWith(status: pending));
+            continue;
+          }
+
+          final s = rawOrder.status.toLowerCase().trim();
+          if (s == 'new' || s == 'pending' || s == 'preparing' || s == 'ready') {
+            activeList.add(rawOrder);
+          }
+        }
 
         // Sort by created time descending (most urgent / newest first)
         activeList.sort((a, b) => b.createdAt.compareTo(a.createdAt));
@@ -119,7 +143,10 @@ class KdsController extends GetxController {
         }
         _isFirstLoad = false;
 
-        orders.assignAll(activeList);
+        // Smart reconciliation: only assign if order count, IDs, or statuses actually changed
+        if (_hasOrdersChanged(orders, activeList)) {
+          orders.assignAll(activeList);
+        }
       }
     } catch (_) {
       // Background silent retry
@@ -128,6 +155,18 @@ class KdsController extends GetxController {
         isLoading.value = false;
       }
     }
+  }
+
+  bool _hasOrdersChanged(List<OrderModel> current, List<OrderModel> incoming) {
+    if (current.length != incoming.length) return true;
+    for (int i = 0; i < current.length; i++) {
+      if (current[i].id != incoming[i].id ||
+          current[i].status.toLowerCase().trim() != incoming[i].status.toLowerCase().trim() ||
+          current[i].items.length != incoming[i].items.length) {
+        return true;
+      }
+    }
+    return false;
   }
 
   void _playChime() {
@@ -217,10 +256,17 @@ class KdsController extends GetxController {
   }
 
   Future<void> _updateStatus(OrderModel order, String newStatus) async {
-    // 1. Optimistic local update
+    // 1. Guard against multi-tap race condition
+    if (updatingOrderIds.contains(order.id)) return;
+    updatingOrderIds.add(order.id);
+
+    // 2. Lock the target status locally so background polling cannot overwrite it
+    _pendingStatusMap[order.id] = newStatus;
+
+    // 3. Optimistic local update
     final index = orders.indexWhere((o) => o.id == order.id);
     if (index >= 0) {
-      if (newStatus == 'Completed') {
+      if (newStatus == 'Completed' || newStatus == 'Voided') {
         orders.removeAt(index);
       } else {
         orders[index] = order.copyWith(status: newStatus);
@@ -228,12 +274,23 @@ class KdsController extends GetxController {
       orders.refresh();
     }
 
-    // 2. Server API call
+    // 4. Server API call
     try {
       await _ordersRepository.updateOrderStatus(order.id, newStatus);
+
+      // Keep pending override active for 8 seconds to guard against any
+      // read-replica latency or race with a concurrent background fetch
+      Timer(const Duration(seconds: 8), () {
+        if (_pendingStatusMap[order.id] == newStatus) {
+          _pendingStatusMap.remove(order.id);
+        }
+      });
     } catch (_) {
       // Re-sync on failure
+      _pendingStatusMap.remove(order.id);
       fetchOrders(showLoading: false);
+    } finally {
+      updatingOrderIds.remove(order.id);
     }
   }
 

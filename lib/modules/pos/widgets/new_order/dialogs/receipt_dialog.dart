@@ -15,11 +15,17 @@ class ReceiptDialog extends StatefulWidget {
     this.onPrintComplete,
   });
 
+  static bool _isShowing = false;
+
   static void show(
     BuildContext context,
     Map<String, dynamic> orderData, {
     VoidCallback? onPrintComplete,
   }) {
+    if (_isShowing) return;
+    _isShowing = true;
+    AppLoader.dismiss();
+
     Get.dialog(
       Dialog(
         backgroundColor: Colors.transparent,
@@ -28,11 +34,16 @@ class ReceiptDialog extends StatefulWidget {
           constraints: const BoxConstraints(maxWidth: 440, maxHeight: 780),
           child: ReceiptDialog(
             orderData: orderData,
-            onPrintComplete: onPrintComplete,
+            onPrintComplete: () {
+              _isShowing = false;
+              onPrintComplete?.call();
+            },
           ),
         ),
       ),
-    );
+    ).then((_) {
+      _isShowing = false;
+    });
   }
 
   @override
