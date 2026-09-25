@@ -14,7 +14,15 @@ DATABASE_URL = os.getenv(
 if DATABASE_URL.startswith("postgres://"):
     DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
 
-engine = create_engine(DATABASE_URL, pool_pre_ping=True)
+try:
+    engine = create_engine(DATABASE_URL, pool_pre_ping=True)
+except Exception:
+    try:
+        pg8000_url = DATABASE_URL.replace("postgresql://", "postgresql+pg8000://", 1)
+        engine = create_engine(pg8000_url, pool_pre_ping=True)
+    except Exception:
+        engine = create_engine(DATABASE_URL, pool_pre_ping=True)
+
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
