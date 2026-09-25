@@ -21,7 +21,7 @@ from ..schemas import (
     SizeOptionResponse,
 )
 
-router = APIRouter(prefix="/api/v1/menu", tags=["Menu & Products"])
+router = APIRouter(tags=["Menu & Products"])
 
 DEFAULT_ADDONS = [
     # Burgers

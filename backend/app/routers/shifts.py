@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session
 from ..database import get_db
 from ..models import Shift, Order
 
-router = APIRouter(prefix="/api/v1/shifts", tags=["shifts"])
+router = APIRouter(tags=["Shifts"])
 
 
 class OpenShiftRequest(BaseModel):

@@ -17,7 +17,7 @@ from ..models import (
     DealItem,
 )
 
-router = APIRouter(prefix="/api/v1/system", tags=["System"])
+router = APIRouter(tags=["System"])
 
 
 class ResetDataRequest(BaseModel):

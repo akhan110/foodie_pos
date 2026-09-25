@@ -8,7 +8,7 @@ from ..database import get_db
 from ..models import Deal, DealItem, Product
 from ..schemas import ApiResponse, DealCreateRequest, DealResponse, DealUpdateRequest
 
-router = APIRouter(prefix="/api/v1/deals", tags=["deals"])
+router = APIRouter(tags=["Deals"])
 
 
 def _seed_default_deals_if_empty(db: Session):

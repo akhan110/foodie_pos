@@ -13,7 +13,7 @@ from ..schemas import (
     OrderStatusUpdateRequest,
 )
 
-router = APIRouter(prefix="/api/v1/orders", tags=["Orders"])
+router = APIRouter(tags=["Orders"])
 
 
 def _seed_default_orders_if_empty(db: Session):

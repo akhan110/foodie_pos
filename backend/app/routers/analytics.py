@@ -8,7 +8,7 @@ from sqlalchemy import func
 from ..database import get_db
 from ..models import Order, OrderItem
 
-router = APIRouter(prefix="/api/v1/analytics", tags=["analytics"])
+router = APIRouter(tags=["Analytics"])
 
 
 @router.get("/overview")

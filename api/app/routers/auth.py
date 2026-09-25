@@ -17,7 +17,7 @@ from ..schemas import (
     TokenResponse,
 )
 
-router = APIRouter(prefix="/api/v1/auth", tags=["Authentication"])
+router = APIRouter(tags=["Authentication"])
 
 
 @router.get("/cashiers")
