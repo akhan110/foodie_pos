@@ -62,26 +62,32 @@ class _KdsShakeWrapperState extends State<KdsShakeWrapper>
           return child!;
         }
 
-        // Oscillate with 10 waves over the 3.5s duration, decaying smoothly
         final progress = _animation.value;
-        final decay = 1.0 - (progress * 0.5); // stays energetic, softly eases at the end
-        final offset = math.sin(progress * math.pi * 14) * 7.0 * decay;
-        final glowAlpha = (math.sin(progress * math.pi * 7).abs() * 0.45 * decay).clamp(0.0, 1.0);
+        final decay = 1.0 - (progress * 0.45); // smooth decay towards end
+
+        // Steering wheel rotation angle: tilts back and forth left & right (±3.5 degrees)
+        final angle = math.sin(progress * math.pi * 18) * 0.058 * decay;
+        final offsetX = math.sin(progress * math.pi * 18) * 3.5 * decay;
+        final glowAlpha = (math.sin(progress * math.pi * 9).abs() * 0.45 * decay).clamp(0.0, 1.0);
 
         return Transform.translate(
-          offset: Offset(offset, 0),
-          child: Container(
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: [
-                BoxShadow(
-                  color: const Color(0xFFEF4444).withValues(alpha: glowAlpha),
-                  blurRadius: 18,
-                  spreadRadius: 2,
-                ),
-              ],
+          offset: Offset(offsetX, 0.0),
+          child: Transform.rotate(
+            angle: angle,
+            alignment: Alignment.center,
+            child: Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFFEF4444).withValues(alpha: glowAlpha),
+                    blurRadius: 18,
+                    spreadRadius: 2,
+                  ),
+                ],
+              ),
+              child: child,
             ),
-            child: child,
           ),
         );
       },
