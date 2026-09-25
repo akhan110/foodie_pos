@@ -111,13 +111,17 @@ class KdsController extends GetxController {
           // If this order has a pending local transition, adhere to the client's desired state
           if (_pendingStatusMap.containsKey(id)) {
             final pending = _pendingStatusMap[id]!;
-            if (pending == 'Completed' || pending == 'Voided') {
-              // Order was marked completed/served; do not bring it back!
+            if (rawOrder.status.toLowerCase().trim() == pending.toLowerCase().trim()) {
+              // Server has caught up with desired status, clear lock
+              _pendingStatusMap.remove(id);
+            } else {
+              // Server is still processing old state; keep client's desired state
+              if (pending == 'Completed' || pending == 'Voided') {
+                continue;
+              }
+              activeList.add(rawOrder.copyWith(status: pending));
               continue;
             }
-            // Retain user's target status (e.g. 'Preparing' or 'Ready')
-            activeList.add(rawOrder.copyWith(status: pending));
-            continue;
           }
 
           final s = rawOrder.status.toLowerCase().trim();
@@ -129,7 +133,7 @@ class KdsController extends GetxController {
         // Sort by created time descending (most urgent / newest first)
         activeList.sort((a, b) => b.createdAt.compareTo(a.createdAt));
 
-        // Check for brand new incoming tickets to play sound chime and trigger 3-4s card shake
+        // Check for brand new incoming tickets to play sound chime and trigger 1.8s calm arrival nudge
         if (!_isFirstLoad) {
           final newOrdersList = activeList.where((o) {
             final s = o.status.toLowerCase().trim();
@@ -144,15 +148,18 @@ class KdsController extends GetxController {
 
             for (final order in newOrdersList) {
               shakingOrderIds.add(order.id);
-              Timer(const Duration(milliseconds: 3500), () {
+              Timer(const Duration(milliseconds: 1800), () {
                 shakingOrderIds.remove(order.id);
               });
             }
           }
         }
 
-        _knownOrderIds.clear();
+        // Retain all known IDs so an existing order never re-triggers new arrival effects
         for (final o in activeList) {
+          _knownOrderIds.add(o.id);
+        }
+        for (final o in rawFetched) {
           _knownOrderIds.add(o.id);
         }
         _isFirstLoad = false;
@@ -385,18 +392,8 @@ class KdsController extends GetxController {
     // 4. Server API call
     try {
       await _ordersRepository.updateOrderStatus(order.id, newStatus);
-
-      // Keep pending override active for 8 seconds to guard against any
-      // read-replica latency or race with a concurrent background fetch
-      Timer(const Duration(seconds: 8), () {
-        if (_pendingStatusMap[order.id] == newStatus) {
-          _pendingStatusMap.remove(order.id);
-        }
-      });
-    } catch (_) {
-      // Re-sync on failure
-      _pendingStatusMap.remove(order.id);
-      fetchOrders(showLoading: false);
+    } catch (e) {
+      debugPrint('Status update API call delayed (optimistic lock preserved): $e');
     } finally {
       updatingOrderIds.remove(order.id);
     }
