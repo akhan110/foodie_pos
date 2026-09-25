@@ -1,4 +1,5 @@
 import os
+import ssl
 from dotenv import load_dotenv
 from sqlalchemy import create_engine
 from sqlalchemy.orm import declarative_base, sessionmaker
@@ -21,9 +22,15 @@ def create_robust_engine(url: str):
             pass
         return eng
     except Exception as e:
-        print(f"Standard PostgreSQL driver failed connection ({e}). Falling back to pg8000...")
-        pg8000_url = url.replace("postgresql://", "postgresql+pg8000://", 1)
-        return create_engine(pg8000_url, pool_pre_ping=True)
+        print(f"Standard PostgreSQL driver connection failed ({e}). Falling back to pg8000...")
+        base_url = url.split("?")[0]
+        pg8000_url = base_url.replace("postgresql://", "postgresql+pg8000://", 1)
+        ssl_ctx = ssl.create_default_context()
+        return create_engine(
+            pg8000_url,
+            connect_args={"ssl_context": ssl_ctx},
+            pool_pre_ping=True,
+        )
 
 
 engine = create_robust_engine(DATABASE_URL)
