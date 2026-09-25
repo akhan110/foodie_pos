@@ -5,8 +5,11 @@ from .database import Base, engine, init_db_schema
 from .routers import auth, menu, orders, shifts, analytics, deals, system
 
 # Automatically create tables and migrate columns if not present
-Base.metadata.create_all(bind=engine)
-init_db_schema()
+try:
+    Base.metadata.create_all(bind=engine)
+    init_db_schema()
+except Exception as e:
+    print(f"Warning: Database initialization on startup encountered: {e}")
 
 app = FastAPI(
     title="BiteFlow POS API",
