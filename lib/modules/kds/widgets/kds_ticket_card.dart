@@ -147,6 +147,7 @@ class KdsTicketCard extends StatelessWidget {
                                       if (action == 'preparing') controller.startCooking(order);
                                       if (action == 'ready') controller.markReady(order);
                                       if (action == 'served') controller.markServed(order);
+                                      if (action == 'remove') controller.promptRemoveOrder(context, order);
                                     },
                                     itemBuilder: (context) => [
                                       if (!isPreparing)
@@ -162,6 +163,23 @@ class KdsTicketCard extends StatelessWidget {
                                       const PopupMenuItem(
                                         value: 'served',
                                         child: Text('Mark Served'),
+                                      ),
+                                      const PopupMenuDivider(),
+                                      const PopupMenuItem(
+                                        value: 'remove',
+                                        child: Row(
+                                          children: [
+                                             Icon(Icons.delete_outline, color: Colors.red, size: 18),
+                                             SizedBox(width: 8),
+                                             Text(
+                                               'Remove from KDS',
+                                               style: TextStyle(
+                                                 color: Colors.red,
+                                                 fontWeight: FontWeight.w600,
+                                               ),
+                                             ),
+                                          ],
+                                        ),
                                       ),
                                     ],
                                   ),
@@ -193,48 +211,48 @@ class KdsTicketCard extends StatelessWidget {
                         ];
 
                         return Padding(
-                          padding: const EdgeInsets.only(bottom: 6),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  CustomTextWidget(
-                                    '${item.quantity}  ×  ',
-                                    style: TextStyle(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w800,
-                                      color: colors.onSurface,
-                                    ),
-                                  ),
-                                  Expanded(
-                                    child: CustomTextWidget(
-                                      item.productName,
-                                      style: TextStyle(
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.w600,
-                                        color: colors.onSurface,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              if (detailsList.isNotEmpty)
-                                Padding(
-                                  padding: const EdgeInsets.only(left: 28, top: 1),
-                                  child: CustomTextWidget(
-                                    detailsList.join(' • '),
-                                    style: const TextStyle(
-                                      fontSize: 11.5,
-                                      fontWeight: FontWeight.w500,
-                                      color: AppColors.primary,
-                                    ),
-                                  ),
-                                ),
-                            ],
-                          ),
-                        );
+                           padding: const EdgeInsets.only(bottom: 6),
+                           child: Column(
+                             crossAxisAlignment: CrossAxisAlignment.start,
+                             children: [
+                               Row(
+                                 crossAxisAlignment: CrossAxisAlignment.start,
+                                 children: [
+                                   CustomTextWidget(
+                                     '${item.quantity}  ×  ',
+                                     style: TextStyle(
+                                       fontSize: 14,
+                                       fontWeight: FontWeight.w800,
+                                       color: colors.onSurface,
+                                     ),
+                                   ),
+                                   Expanded(
+                                     child: CustomTextWidget(
+                                       item.productName,
+                                       style: TextStyle(
+                                         fontSize: 14,
+                                         fontWeight: FontWeight.w600,
+                                         color: colors.onSurface,
+                                       ),
+                                     ),
+                                   ),
+                                 ],
+                               ),
+                               if (detailsList.isNotEmpty)
+                                 Padding(
+                                   padding: const EdgeInsets.only(left: 28, top: 1),
+                                   child: CustomTextWidget(
+                                     detailsList.join(' • '),
+                                     style: const TextStyle(
+                                       fontSize: 11.5,
+                                       fontWeight: FontWeight.w500,
+                                       color: AppColors.primary,
+                                     ),
+                                   ),
+                                 ),
+                             ],
+                           ),
+                         );
                       }),
 
                       const SizedBox(height: 8),
@@ -269,97 +287,117 @@ class KdsTicketCard extends StatelessWidget {
                         const SizedBox(height: 10),
                       ],
 
-                      // STAGE ACTION BUTTON
+                      // STAGE ACTION BUTTON + REMOVE BUTTON
                       Obx(() {
                         final isUpdating = controller.updatingOrderIds.contains(order.id);
 
+                        Widget actionBtn;
                         if (isNew) {
-                          return SizedBox(
-                            width: double.infinity,
-                            height: 38,
-                            child: ElevatedButton.icon(
-                              onPressed: isUpdating ? null : () => controller.startCooking(order),
-                              icon: isUpdating
-                                  ? const SizedBox(
-                                      width: 16,
-                                      height: 16,
-                                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                                    )
-                                  : const Icon(Icons.play_arrow_rounded, size: 18, color: Colors.white),
-                              label: Text(
-                                isUpdating ? 'Starting...' : 'Start Cooking',
-                                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: Colors.white),
-                              ),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: stageColor,
-                                disabledBackgroundColor: stageColor.withValues(alpha: 0.6),
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                                elevation: 0,
-                              ),
+                          actionBtn = ElevatedButton.icon(
+                            onPressed: isUpdating ? null : () => controller.startCooking(order),
+                            icon: isUpdating
+                                ? const SizedBox(
+                                    width: 16,
+                                    height: 16,
+                                    child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                                  )
+                                : const Icon(Icons.play_arrow_rounded, size: 18, color: Colors.white),
+                            label: Text(
+                              isUpdating ? 'Starting...' : 'Start Cooking',
+                              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: Colors.white),
+                            ),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: stageColor,
+                              disabledBackgroundColor: stageColor.withValues(alpha: 0.6),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                              elevation: 0,
                             ),
                           );
                         } else if (isPreparing) {
-                          return Row(
-                            children: [
-                              Expanded(
-                                child: SizedBox(
+                          actionBtn = OutlinedButton.icon(
+                            onPressed: isUpdating ? null : () => controller.markReady(order),
+                            icon: isUpdating
+                                ? SizedBox(
+                                    width: 16,
+                                    height: 16,
+                                    child: CircularProgressIndicator(strokeWidth: 2, color: stageColor),
+                                  )
+                                : Icon(Icons.check_circle_outline, size: 16, color: stageColor),
+                            label: Text(
+                              isUpdating ? 'Updating...' : 'Ready',
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w800,
+                                color: isUpdating ? stageColor.withValues(alpha: 0.6) : stageColor,
+                              ),
+                            ),
+                            style: OutlinedButton.styleFrom(
+                              side: BorderSide(
+                                color: isUpdating ? stageColor.withValues(alpha: 0.4) : stageColor,
+                                width: 1.5,
+                              ),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                            ),
+                          );
+                        } else if (isReady) {
+                          actionBtn = ElevatedButton.icon(
+                            onPressed: isUpdating ? null : () => controller.markServed(order),
+                            icon: isUpdating
+                                ? const SizedBox(
+                                    width: 16,
+                                    height: 16,
+                                    child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                                  )
+                                : const Icon(Icons.check_rounded, size: 18, color: Colors.white),
+                            label: Text(
+                              isUpdating ? 'Serving...' : 'Mark Served',
+                              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: Colors.white),
+                            ),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: stageColor,
+                              disabledBackgroundColor: stageColor.withValues(alpha: 0.6),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                              elevation: 0,
+                            ),
+                          );
+                        } else {
+                          return const SizedBox.shrink();
+                        }
+
+                        return Row(
+                          children: [
+                            Expanded(
+                              child: SizedBox(
+                                height: 38,
+                                child: actionBtn,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Tooltip(
+                              message: 'Remove from KDS',
+                              child: InkWell(
+                                onTap: isUpdating ? null : () => controller.promptRemoveOrder(context, order),
+                                borderRadius: BorderRadius.circular(10),
+                                child: Container(
+                                  width: 38,
                                   height: 38,
-                                  child: OutlinedButton.icon(
-                                    onPressed: isUpdating ? null : () => controller.markReady(order),
-                                    icon: isUpdating
-                                        ? SizedBox(
-                                            width: 16,
-                                            height: 16,
-                                            child: CircularProgressIndicator(strokeWidth: 2, color: stageColor),
-                                          )
-                                        : Icon(Icons.check_circle_outline, size: 16, color: stageColor),
-                                    label: Text(
-                                      isUpdating ? 'Updating...' : 'Ready',
-                                      style: TextStyle(
-                                        fontSize: 13,
-                                        fontWeight: FontWeight.w800,
-                                        color: isUpdating ? stageColor.withValues(alpha: 0.6) : stageColor,
-                                      ),
+                                  decoration: BoxDecoration(
+                                    color: colors.surfaceContainerHighest,
+                                    borderRadius: BorderRadius.circular(10),
+                                    border: Border.all(
+                                      color: theme.dividerColor.withValues(alpha: 0.6),
                                     ),
-                                    style: OutlinedButton.styleFrom(
-                                      side: BorderSide(
-                                        color: isUpdating ? stageColor.withValues(alpha: 0.4) : stageColor,
-                                        width: 1.5,
-                                      ),
-                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                                    ),
+                                  ),
+                                  child: const Icon(
+                                    Icons.delete_outline_rounded,
+                                    size: 19,
+                                    color: Colors.redAccent,
                                   ),
                                 ),
                               ),
-                            ],
-                          );
-                        } else if (isReady) {
-                          return SizedBox(
-                            width: double.infinity,
-                            height: 38,
-                            child: ElevatedButton.icon(
-                              onPressed: isUpdating ? null : () => controller.markServed(order),
-                              icon: isUpdating
-                                  ? const SizedBox(
-                                      width: 16,
-                                      height: 16,
-                                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                                    )
-                                  : const Icon(Icons.check_rounded, size: 18, color: Colors.white),
-                              label: Text(
-                                isUpdating ? 'Serving...' : 'Mark Served',
-                                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: Colors.white),
-                              ),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: stageColor,
-                                disabledBackgroundColor: stageColor.withValues(alpha: 0.6),
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                                elevation: 0,
-                              ),
                             ),
-                          );
-                        }
-                        return const SizedBox.shrink();
+                          ],
+                        );
                       }),
                     ],
                   ),

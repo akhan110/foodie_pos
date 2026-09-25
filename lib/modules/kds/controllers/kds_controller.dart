@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:foodiepos/app/routes/app_routes.dart';
 import 'package:foodiepos/app/services/sound_service.dart';
@@ -262,6 +263,92 @@ class KdsController extends GetxController {
   Future<void> markServed(OrderModel order) async {
     HapticFeedback.selectionClick();
     await _updateStatus(order, 'Completed');
+  }
+
+  Future<void> removeOrderFromKds(OrderModel order, {bool voidOrder = false}) async {
+    if (updatingOrderIds.contains(order.id)) return;
+    updatingOrderIds.add(order.id);
+
+    final targetStatus = voidOrder ? 'Voided' : 'Completed';
+    _pendingStatusMap[order.id] = targetStatus;
+
+    // Optimistically remove from active list
+    final index = orders.indexWhere((o) => o.id == order.id);
+    if (index >= 0) {
+      orders.removeAt(index);
+      orders.refresh();
+    }
+
+    try {
+      if (voidOrder) {
+        await _ordersRepository.updateOrderStatus(order.id, 'Voided');
+      } else {
+        await _ordersRepository.updateOrderStatus(order.id, 'Completed');
+      }
+      AppLoader.showSuccess('Order ${order.orderNumber} removed from KDS');
+    } catch (e) {
+      debugPrint('Error removing order from KDS: $e');
+    } finally {
+      updatingOrderIds.remove(order.id);
+    }
+  }
+
+  void promptRemoveOrder(BuildContext context, OrderModel order) {
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        final theme = Theme.of(ctx);
+        final isDark = theme.brightness == Brightness.dark;
+
+        return AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          backgroundColor: isDark ? const Color(0xFF1E222B) : Colors.white,
+          title: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.red.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(Icons.delete_outline, color: Colors.red, size: 22),
+              ),
+              const SizedBox(width: 12),
+              const Text(
+                'Remove Order',
+                style: TextStyle(fontWeight: FontWeight.w800, fontSize: 18),
+              ),
+            ],
+          ),
+          content: Text(
+            'Are you sure you want to remove ${order.orderNumber} from the Kitchen Display?',
+            style: TextStyle(
+              fontSize: 14,
+              color: isDark ? Colors.white70 : Colors.black87,
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(),
+              child: const Text('Cancel', style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold)),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.of(ctx).pop();
+                removeOrderFromKds(order, voidOrder: false);
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                elevation: 0,
+              ),
+              child: const Text('Remove', style: TextStyle(fontWeight: FontWeight.bold)),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   Future<void> _updateStatus(OrderModel order, String newStatus) async {
