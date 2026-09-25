@@ -85,8 +85,8 @@ class KdsController extends GetxController {
       fetchOrders(showLoading: false);
     });
 
-    // 3. Elapsed ticket time ticker - every 30 seconds to refresh UI time labels
-    _elapsedTimer = Timer.periodic(const Duration(seconds: 30), (_) {
+    // 3. Elapsed ticket time ticker - every 10 seconds to refresh UI time labels & color aging
+    _elapsedTimer = Timer.periodic(const Duration(seconds: 10), (_) {
       orders.refresh();
     });
   }

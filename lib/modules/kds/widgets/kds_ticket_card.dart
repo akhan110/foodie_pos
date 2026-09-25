@@ -27,18 +27,38 @@ class KdsTicketCard extends StatelessWidget {
     final isPreparing = statusLower == 'preparing';
     final isReady = statusLower == 'ready';
 
-    // Accent theme color per stage
-    final Color stageColor;
-    if (isNew) {
-      stageColor = const Color(0xFFEF4444); // Red
-    } else if (isPreparing) {
-      stageColor = const Color(0xFFF59E0B); // Amber / Orange
+    // Elapsed time calculation
+    final elapsedMinutes = DateTime.now().difference(order.createdAt).inMinutes.clamp(0, 999);
+    final isLate = !isReady && elapsedMinutes >= 12;
+    final isWarning = !isReady && elapsedMinutes >= 5 && elapsedMinutes < 12;
+
+    // Smart Urgency Color Aging:
+    // - Green (0-5m): On track
+    // - Amber (5-11m): Warning / actively cooking
+    // - Red (>12m): LATE / Overdue rush
+    final Color timerColor;
+    if (isReady) {
+      timerColor = const Color(0xFF10B981); // Green for ready
+    } else if (isLate) {
+      timerColor = const Color(0xFFEF4444); // Crimson Red for Overdue
+    } else if (isWarning) {
+      timerColor = const Color(0xFFF59E0B); // Amber for 5-11 min
     } else {
-      stageColor = const Color(0xFF10B981); // Green
+      timerColor = const Color(0xFF10B981); // Fresh Green for 0-4 min
     }
 
-    // Elapsed minutes
-    final elapsedMinutes = DateTime.now().difference(order.createdAt).inMinutes.clamp(0, 999);
+    // Left accent bar color
+    final Color stageColor;
+    if (isLate) {
+      stageColor = const Color(0xFFEF4444);
+    } else if (isNew) {
+      stageColor = const Color(0xFFEF4444); // Red for New
+    } else if (isPreparing) {
+      stageColor = const Color(0xFFF59E0B); // Amber for Preparing
+    } else {
+      stageColor = const Color(0xFF10B981); // Green for Ready
+    }
+
     final timeFormatted = order.formattedTime;
 
     return Obx(() {
@@ -52,17 +72,21 @@ class KdsTicketCard extends StatelessWidget {
             color: isDark ? const Color(0xFF1E222B) : Colors.white,
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
-              color: isShaking
-                  ? const Color(0xFFEF4444)
-                  : (isDark ? const Color(0xFF2C3240) : const Color(0xFFE5E7EB)),
-              width: isShaking ? 1.5 : 1,
+              color: isLate
+                  ? const Color(0xFFEF4444).withValues(alpha: 0.7)
+                  : (isShaking
+                      ? const Color(0xFFEF4444)
+                      : (isDark ? const Color(0xFF2C3240) : const Color(0xFFE5E7EB))),
+              width: (isLate || isShaking) ? 1.5 : 1,
             ),
             boxShadow: [
               BoxShadow(
-                color: isShaking
-                    ? const Color(0xFFEF4444).withValues(alpha: 0.3)
-                    : Colors.black.withValues(alpha: isDark ? 0.2 : 0.04),
-                blurRadius: isShaking ? 14 : 10,
+                color: isLate
+                    ? const Color(0xFFEF4444).withValues(alpha: 0.12)
+                    : (isShaking
+                        ? const Color(0xFFEF4444).withValues(alpha: 0.3)
+                        : Colors.black.withValues(alpha: isDark ? 0.2 : 0.04)),
+                blurRadius: (isLate || isShaking) ? 14 : 10,
                 offset: const Offset(0, 4),
               ),
             ],
@@ -127,22 +151,24 @@ class KdsTicketCard extends StatelessWidget {
                                 ),
                               ),
 
-                              // Elapsed timer & creation time
+                              // Elapsed timer with Smart Color Aging Badge & Creation time
                               Column(
                                 crossAxisAlignment: CrossAxisAlignment.end,
                                 children: [
                                   Row(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
-                                      CustomTextWidget(
-                                        isReady ? 'Ready' : '$elapsedMinutes min',
-                                        style: TextStyle(
-                                          fontSize: 14,
-                                          fontWeight: FontWeight.w800,
-                                          color: stageColor,
-                                        ),
+                                      // Smart Aging Timer Badge
+                                      _buildTimerBadge(
+                                        isReady: isReady,
+                                        isLate: isLate,
+                                        isWarning: isWarning,
+                                        elapsedMinutes: elapsedMinutes,
+                                        timerColor: timerColor,
                                       ),
                                       const SizedBox(width: 4),
+
+                                      // Actions Dropdown Menu
                                       PopupMenuButton<String>(
                                         icon: Icon(
                                           Icons.more_vert,
@@ -195,6 +221,7 @@ class KdsTicketCard extends StatelessWidget {
                                       ),
                                     ],
                                   ),
+                                  const SizedBox(height: 2),
                                   CustomTextWidget(
                                     timeFormatted,
                                     style: TextStyle(
@@ -267,7 +294,7 @@ class KdsTicketCard extends StatelessWidget {
 
                           const SizedBox(height: 8),
 
-                          // PREPARING PROGRESS BAR (Only for Preparing stage)
+                          // PREPARING PROGRESS BAR (Color changes with urgency)
                           if (isPreparing) ...[
                             const SizedBox(height: 4),
                             Row(
@@ -276,20 +303,20 @@ class KdsTicketCard extends StatelessWidget {
                                   child: ClipRRect(
                                     borderRadius: BorderRadius.circular(6),
                                     child: LinearProgressIndicator(
-                                      value: (elapsedMinutes / 12.0).clamp(0.1, 1.0),
+                                      value: (elapsedMinutes / 12.0).clamp(0.08, 1.0),
                                       backgroundColor: colors.surfaceContainerHighest,
-                                      valueColor: AlwaysStoppedAnimation<Color>(stageColor),
+                                      valueColor: AlwaysStoppedAnimation<Color>(timerColor),
                                       minHeight: 8,
                                     ),
                                   ),
                                 ),
                                 const SizedBox(width: 8),
                                 CustomTextWidget(
-                                  '$elapsedMinutes / 12 min',
+                                  isLate ? '$elapsedMinutes / 12m (OVERDUE)' : '$elapsedMinutes / 12 min',
                                   style: TextStyle(
                                     fontSize: 11.5,
                                     fontWeight: FontWeight.bold,
-                                    color: colors.onSurfaceVariant,
+                                    color: timerColor,
                                   ),
                                 ),
                               ],
@@ -317,7 +344,7 @@ class KdsTicketCard extends StatelessWidget {
                                   style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: Colors.white),
                                 ),
                                 style: ElevatedButton.styleFrom(
-                                  backgroundColor: stageColor,
+                                  backgroundColor: isLate ? const Color(0xFFEF4444) : stageColor,
                                   disabledBackgroundColor: stageColor.withValues(alpha: 0.6),
                                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                                   elevation: 0,
@@ -420,6 +447,78 @@ class KdsTicketCard extends StatelessWidget {
         ),
       );
     });
+  }
+
+  Widget _buildTimerBadge({
+    required bool isReady,
+    required bool isLate,
+    required bool isWarning,
+    required int elapsedMinutes,
+    required Color timerColor,
+  }) {
+    if (isReady) {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
+        decoration: BoxDecoration(
+          color: const Color(0xFF10B981).withValues(alpha: 0.15),
+          borderRadius: BorderRadius.circular(6),
+        ),
+        child: const Text(
+          'Ready',
+          style: TextStyle(
+            fontSize: 12.5,
+            fontWeight: FontWeight.w900,
+            color: Color(0xFF10B981),
+          ),
+        ),
+      );
+    }
+
+    if (isLate) {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
+        decoration: BoxDecoration(
+          color: const Color(0xFFEF4444).withValues(alpha: 0.18),
+          borderRadius: BorderRadius.circular(6),
+          border: Border.all(
+            color: const Color(0xFFEF4444).withValues(alpha: 0.6),
+            width: 1,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.warning_amber_rounded, size: 13, color: Color(0xFFEF4444)),
+            const SizedBox(width: 3),
+            Text(
+              'LATE ${elapsedMinutes}m',
+              style: const TextStyle(
+                fontSize: 11.5,
+                fontWeight: FontWeight.w900,
+                color: Color(0xFFEF4444),
+                letterSpacing: 0.3,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
+      decoration: BoxDecoration(
+        color: timerColor.withValues(alpha: 0.14),
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Text(
+        '$elapsedMinutes min',
+        style: TextStyle(
+          fontSize: 12.5,
+          fontWeight: FontWeight.w800,
+          color: timerColor,
+        ),
+      ),
+    );
   }
 
   Widget _buildOrderTypeBadge(BuildContext context, String type) {
