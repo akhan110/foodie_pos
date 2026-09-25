@@ -14,14 +14,19 @@ DATABASE_URL = os.getenv(
 if DATABASE_URL.startswith("postgres://"):
     DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
 
-try:
-    engine = create_engine(DATABASE_URL, pool_pre_ping=True)
-except Exception:
+def create_robust_engine(url: str):
     try:
-        pg8000_url = DATABASE_URL.replace("postgresql://", "postgresql+pg8000://", 1)
-        engine = create_engine(pg8000_url, pool_pre_ping=True)
-    except Exception:
-        engine = create_engine(DATABASE_URL, pool_pre_ping=True)
+        eng = create_engine(url, pool_pre_ping=True)
+        with eng.connect() as conn:
+            pass
+        return eng
+    except Exception as e:
+        print(f"Standard PostgreSQL driver failed connection ({e}). Falling back to pg8000...")
+        pg8000_url = url.replace("postgresql://", "postgresql+pg8000://", 1)
+        return create_engine(pg8000_url, pool_pre_ping=True)
+
+
+engine = create_robust_engine(DATABASE_URL)
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()

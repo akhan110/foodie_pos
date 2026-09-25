@@ -17,6 +17,9 @@ app = FastAPI(
     version="1.0.0",
 )
 
+import traceback
+from fastapi.responses import JSONResponse
+
 # Enable CORS for Flutter Web, Desktop, Mobile, and Localhost
 app.add_middleware(
     CORSMiddleware,
@@ -25,6 +28,20 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    error_trace = traceback.format_exc()
+    return JSONResponse(
+        status_code=500,
+        content={
+            "success": False,
+            "error": str(exc),
+            "trace": error_trace.splitlines(),
+            "statusCode": 500,
+        },
+    )
+
 
 import os
 from fastapi.staticfiles import StaticFiles
