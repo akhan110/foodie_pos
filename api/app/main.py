@@ -82,16 +82,3 @@ def health_check():
     return {"status": "healthy", "service": "biteflow-pos-backend"}
 
 
-@app.api_route("/{full_path:path}", methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS", "HEAD"])
-async def debug_catch_all(request: Request, full_path: str):
-    return {
-        "debug": True,
-        "path": request.url.path,
-        "full_path": full_path,
-        "headers": dict(request.headers),
-        "scope": {
-            "path": request.scope.get("path"),
-            "raw_path": request.scope.get("raw_path", b"").decode("utf-8", errors="ignore"),
-        }
-    }
-
