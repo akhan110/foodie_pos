@@ -33,10 +33,8 @@ Future<void> main() async {
       },
     ),
   );
-
   // Configure EasyLoading global indicator style
   _configureEasyLoading();
-
   Get.put(ThemeController(), permanent: true);
   Get.put(ReceiptSettingsService(), permanent: true);
   runApp(const BiteFlowApp());
