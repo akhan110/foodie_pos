@@ -1,4 +1,4 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 
 from .database import Base, engine, init_db_schema
@@ -80,3 +80,14 @@ def root():
 @app.get("/api/v1/health")
 def health_check():
     return {"status": "healthy", "service": "biteflow-pos-backend"}
+
+
+@app.api_route("/{path_name:path}", methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"])
+def debug_catch_all(request: Request, path_name: str):
+    return {
+        "received_path_name": path_name,
+        "request_url_path": request.url.path,
+        "available_routes": [
+            getattr(route, "path", None) for route in app.routes if getattr(route, "path", None)
+        ],
+    }
